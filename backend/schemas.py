@@ -10,7 +10,7 @@ from typing import Optional
 """ Schema for Course """
 class CourseBase(BaseModel):
     course_name: str
-    duration: str
+    duration: int
     skill_level: str
     course_fees: int
 

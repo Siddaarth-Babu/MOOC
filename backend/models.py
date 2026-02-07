@@ -29,7 +29,7 @@ class Course(Base):
 
     course_id = Column(Integer, primary_key=True, index=True)
     course_name = Column(String(100), nullable=False)
-    duration = Column(String(50))
+    duration = Column(Integer)
     skill_level = Column(String(50))
     course_fees = Column(Integer)
 
