@@ -41,6 +41,7 @@ class Course(Base):
     # One - Many
     videos = relationship("Video",back_populates="course")
     notes = relationship("Notes",back_populates="course")
+    assignment = relationship("Assignment",back_populates="course")
     # Many-to-Many Links
     topics = relationship("Topic", secondary=course_topic_link)
     instructors = relationship("Instructor", secondary=course_instructor_link)
@@ -93,8 +94,8 @@ class Notes(Base):
 class Textbook(Base):
     __tablename__ = "textbook"
 
-    book_id = Column(Integer, primary_key=True, index=True)
-    title_name = Column(String(150), nullable=False)
+    textbook_id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(150), nullable=False)
     author = Column(String(100))
     publisher = Column(String(100))
 
@@ -158,3 +159,14 @@ class Evaluation(Base):
     student_id = Column(Integer, ForeignKey("student.student_id"), nullable=False)
     course_id = Column(Integer, ForeignKey("course.course_id"), nullable=False)
 
+class Assignment(Base):
+    __tablename__ = "assignment"
+
+    assignment_id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100), nullable=False)
+    description = Column(String(500))
+    assignment_url_link = Column(String(200), nullable=False)
+    submission_url_link = Column(String(200))
+    marks = Column(Integer)
+    due_date = Column(Date)
+    course_id = Column(Integer, ForeignKey("course.course_id"))

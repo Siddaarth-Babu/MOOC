@@ -28,6 +28,7 @@ class Course(CourseBase):
     notes: list[Notes] = []
     topics: list[Topic] = []
     instructors: list[Instructor] = []
+    assignment: list[Assignment] = []
 
     class Config:
         from_attributes = True
@@ -189,5 +190,22 @@ class DataAnalystCreate(DataAnalystBase):
 class DataAnalyst(DataAnalystBase):
     analyst_id: int
 
+    class Config:
+        from_attributes = True
+
+""" Schema for Assignment """
+class AssignmentBase(BaseModel):
+    title: str
+    description: str
+    assignment_url_link: str
+    submission_url_link: str
+    due_date: date
+    marks: int
+
+class AssignmentCreate(AssignmentBase):
+    course_id: int
+
+class Assignment(AssignmentBase):
+    assignment_id: int
     class Config:
         from_attributes = True
