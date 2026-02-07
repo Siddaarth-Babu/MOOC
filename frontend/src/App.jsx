@@ -10,6 +10,7 @@ import CourseDetails from './pages/student/CourseDetails.jsx'
 import CourseCard from './components/student/CourseCard.jsx'
 import MyEnrollments from './pages/student/MyEnrollments.jsx'
 import CoursePage from './components/student/CoursePage.jsx'
+import Profile from './pages/student/Profile.jsx'
 const App = () => {
   return (
     <div>
@@ -26,6 +27,7 @@ const App = () => {
         <Route path="/courses/:id" element={<CourseDetails />} />
         <Route path="/student/enrollments" element={<MyEnrollments />} />
         <Route path="/coursepage" element={<CoursePage />} />
+        <Route path="/student/profile" element={<Profile />} />
       </Routes>
     </div>
   )

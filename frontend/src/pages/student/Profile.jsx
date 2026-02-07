@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import Navbar from '../../components/student/Navbar'
+import Footer from '../../components/student/Footer'
 
 /*
  Profile page
@@ -29,170 +31,320 @@ const Profile = () => {
 
   // Course list left empty — backend should populate this
   const [enrollments, setEnrollments] = useState([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [savedProfile, setSavedProfile] = useState(null)
 
-  useEffect(() => {
-    let mounted = true
+ // inside component
 
-    const fetchProfile = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`)
-        if (!mounted) return
+useEffect(() => {
+  let mounted = true
 
-        if (res.ok) {
-          const json = await res.json()
-          // Map DB fields (ER diagram) to component state
-          const s = json.student || json
-          setEmail(s.email || '')
-          setName(s.name || '')
-          setAge(s.age ?? '')
-          setCountry(s.country || '')
-          setSkillLevel(s.skillLevel || '')
-          setSpecialization(s.specialization || '')
-          setContactNumber(s.contactNumber || '')
-
-          // If backend returns enrollments, set them; otherwise keep empty array
-          if (json.enrollments) setEnrollments(json.enrollments)
-        } else {
-          // fallback demo values when backend is unavailable
-          setEmail('tinku2543m@gmail.com')
-          setName('Sravan Maddipatla')
-          setAge('22')
-          setCountry('India')
-          setSkillLevel('Intermediate')
-          setSpecialization('Computer Networks')
-          setContactNumber('+91-9876543210')
-        }
-      } catch (err) {
-        // network issue — use light demo fallback
-        setEmail('tinku2543m@gmail.com')
-        setName('Sravan Maddipatla')
-        setAge('22')
-        setCountry('India')
-        setSkillLevel('Intermediate')
-        setSpecialization('Computer Networks')
-        setContactNumber('+91-9876543210')
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    fetchProfile()
-
-    return () => {
-      mounted = false
-    }
-  }, [studentId])
-
-  const handleSave = async (e) => {
-    e.preventDefault()
+  const fetchProfile = async () => {
+    setLoading(true)
     setError(null)
     try {
-      const payload = {
-        name,
-        age,
-        country,
-        skillLevel,
-        specialization,
-        contactNumber
-      }
-
       const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Accept': 'application/json',
+          // 'Authorization': `Bearer ${localStorage.getItem('token')}` // uncomment if required
+        }
       })
 
-      if (!res.ok) throw new Error('Failed to save')
+      if (!mounted) return
 
-      // optionally show feedback — here we navigate back to dashboard or refresh
-      const updated = await res.json()
-      // reflect server response if it returns updated record
-      if (updated?.name) setName(updated.name)
-      alert('Profile saved')
+      if (res.ok) {
+        const json = await res.json()
+        const s = json.student || json
+        setEmail(s.email || '')
+        setName(s.name || '')
+        setAge(s.age ?? '')
+        setCountry(s.country || '')
+        setSkillLevel(s.skillLevel || '')
+        setSpecialization(s.specialization || '')
+        setContactNumber(s.contactNumber || '')
+
+        // snapshot current saved profile for Cancel
+        setSavedProfile({
+          name: s.name || '',
+          age: s.age ?? '',
+          country: s.country || '',
+          skillLevel: s.skillLevel || '',
+          specialization: s.specialization || '',
+          contactNumber: s.contactNumber || ''
+        })
+
+        if (json.enrollments) setEnrollments(json.enrollments)
+      } else {
+        // try to read error message for debugging
+        const errBody = await res.text().catch(() => null)
+        setError(`Failed to load profile (${res.status}): ${errBody || res.statusText}`)
+        // fallback demo values (as before)
+        const fallback = {
+          name: 'Sravan Maddipatla',
+          age: '22',
+          country: 'India',
+          skillLevel: 'Intermediate',
+          specialization: 'Computer Networks',
+          contactNumber: '+91-9876543210'
+        }
+        setEmail('tinku2543m@gmail.com')
+        setName(fallback.name)
+        setAge(fallback.age)
+        setCountry(fallback.country)
+        setSkillLevel(fallback.skillLevel)
+        setSpecialization(fallback.specialization)
+        setContactNumber(fallback.contactNumber)
+        setSavedProfile(fallback)
+      }
     } catch (err) {
-      setError(err.message || 'Save failed')
+      // network issue
+      setError(`Network error: ${err.message}`)
+      const fallback = {
+        name: 'Sravan Maddipatla',
+        age: '22',
+        country: 'India',
+        skillLevel: 'Intermediate',
+        specialization: 'Computer Networks',
+        contactNumber: '+91-9876543210'
+      }
+      setEmail('tinku2543m@gmail.com')
+      setName(fallback.name)
+      setAge(fallback.age)
+      setCountry(fallback.country)
+      setSkillLevel(fallback.skillLevel)
+      setSpecialization(fallback.specialization)
+      setContactNumber(fallback.contactNumber)
+      setSavedProfile(fallback)
+    } finally {
+      if (mounted) setLoading(false)
     }
   }
 
-  if (loading) return <div style={{ padding: 24 }}>Loading profile…</div>
+  fetchProfile()
+  return () => { mounted = false }
+}, [studentId])
+
+
+// Improved handleSave
+const handleSave = async (e) => {
+  e.preventDefault()
+  setError(null)
+
+  // client-side validation: make sure skillLevel is one of allowed values
+  const allowedSkillLevels = ['Beginner','Intermediate','Advanced','beginner','intermediate','advanced']
+  if (skillLevel && !allowedSkillLevels.includes(skillLevel)) {
+    setError('Invalid skill level. Use Beginner / Intermediate / Advanced')
+    return
+  }
+
+  try {
+    // convert age to number if possible
+    const ageVal = age === '' ? null : Number(age)
+    const payload = {
+      name,
+      age: ageVal,
+      country,
+      skillLevel,
+      specialization,
+      contactNumber
+    }
+
+    // choose method PATCH vs PUT per your API design
+    const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
+      method: 'PUT', // or 'PATCH' if your server expects partial updates
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        // 'Authorization': `Bearer ${localStorage.getItem('token')}` // add if needed
+      },
+      body: JSON.stringify(payload)
+    })
+
+    // read body (works for ok or not ok)
+    const text = await res.text()
+    let body = null
+    try { body = JSON.parse(text) } catch (_) { body = text }
+
+    if (!res.ok) {
+      // prefer server-sent message if present
+      const message = body?.message || body?.error || (typeof body === 'string' ? body : null) || `Server returned ${res.status}`
+      throw new Error(message)
+    }
+
+    // success — server returned updated model
+    const updated = body || payload
+    const newSnapshot = {
+      name: updated.name ?? name,
+      age: updated.age ?? age,
+      country: updated.country ?? country,
+      skillLevel: updated.skillLevel ?? skillLevel,
+      specialization: updated.specialization ?? specialization,
+      contactNumber: updated.contactNumber ?? contactNumber
+    }
+    setSavedProfile(newSnapshot)
+    setName(newSnapshot.name)
+    setAge(newSnapshot.age)
+    setCountry(newSnapshot.country)
+    setSkillLevel(newSnapshot.skillLevel)
+    setSpecialization(newSnapshot.specialization)
+    setContactNumber(newSnapshot.contactNumber)
+    setIsEditing(false)
+    alert('Profile saved')
+  } catch (err) {
+    setError(err.message || 'Save failed')
+  }
+}
+
+// Revert to last saved snapshot and leave edit mode
+const handleCancel = () => {
+  if (savedProfile) {
+    setName(savedProfile.name ?? '')
+    setAge(savedProfile.age ?? '')
+    setCountry(savedProfile.country ?? '')
+    setSkillLevel(savedProfile.skillLevel ?? '')
+    setSpecialization(savedProfile.specialization ?? '')
+    setContactNumber(savedProfile.contactNumber ?? '')
+  }
+  setError(null)
+  setIsEditing(false)
+}
+
+  if (loading) return <div className="student-loading">Loading profile…</div>
 
   return (
-    <div style={{ padding: 24, background: 'var(--bg)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#eef3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700 }}>
-          {(name || 'U').split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}
-        </div>
+    <div className="profile-page">
+      <Navbar />
+      <div className="profile-header">
+        <div className="profile-avatar">{(name || 'U').split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}</div>
         <div>
-          <h1 style={{ margin: 0 }}>{name}</h1>
-          <div style={{ color: '#6b7280' }}>{specialization}</div>
+          <h1 className="profile-name">{name}</h1>
+          <div className="profile-specialization">{specialization}</div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 20, marginTop: 20 }}>
-        <form onSubmit={handleSave} style={{ background: '#ffffff', padding: 20, borderRadius: 8, border: '1px solid #eef2f7' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
+      <div className="profile-grid">
+        <div className="profile-form">
+          {!isEditing ? (
+            <div className="profile-display">
+              <div className="profile-display-row">
+                <div>
+                  <div className="profile-display-label">Name</div>
+                  <div className="profile-display-value">{name}</div>
+                </div>
+                <div>
+                  <div className="profile-display-label">Email (fixed)</div>
+                  <div className="profile-display-value">{email}</div>
+                </div>
+              </div>
+
+              <div className="profile-display-row">
+                <div>
+                  <div className="profile-display-label">Age</div>
+                  <div className="profile-display-value">{age}</div>
+                </div>
+                <div>
+                  <div className="profile-display-label">Country</div>
+                  <div className="profile-display-value">{country}</div>
+                </div>
+              </div>
+
+              <div className="profile-display-row">
+                <div>
+                  <div className="profile-display-label">Skill level</div>
+                  <div className="profile-display-value">{skillLevel}</div>
+                </div>
+                <div>
+                  <div className="profile-display-label">Specialization</div>
+                  <div className="profile-display-value">{specialization}</div>
+                </div>
+              </div>
+
+              <div style={{marginTop:8}}>
+                <div className="profile-display-label">Contact number</div>
+                <div className="profile-display-value">{contactNumber}</div>
+              </div>
+
+              <div className="profile-save-row">
+                <button type="button" className="btn-edit" onClick={() => setIsEditing(true)}>Edit profile</button>
+              </div>
             </div>
+          ) : (
+            <form onSubmit={handleSave}>
+              <div className="profile-field-grid">
+                <div className="profile-field">
+                  <label className="profile-label">Name</label>
+                  <input className="profile-input" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Email (fixed)</label>
-              <input value={email} readOnly style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #eef2f7', background: '#fbfdff' }} />
-            </div>
+                <div className="profile-field">
+                  <label className="profile-label">Email (fixed)</label>
+                  <input className="profile-input readonly" value={email} readOnly />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Age</label>
-              <input value={age} onChange={(e) => setAge(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
-            </div>
+                <div className="profile-field">
+                  <label className="profile-label">Age</label>
+                  <input className="profile-input" value={age} onChange={(e) => setAge(e.target.value)} />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Country</label>
-              <input value={country} onChange={(e) => setCountry(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
-            </div>
+                <div className="profile-field">
+                  <label className="profile-label">Country</label>
+                  <input className="profile-input" value={country} onChange={(e) => setCountry(e.target.value)} />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Skill level</label>
-              <input value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
-            </div>
+                <div className="profile-field">
+                <label className="profile-label">Skill level</label>
+                <select
+                    className="profile-input"
+                    value={skillLevel}
+                    onChange={(e) => setSkillLevel(e.target.value)}
+                >
+                    <option value="">Select level</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Specialization</label>
-              <input value={specialization} onChange={(e) => setSpecialization(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
-            </div>
 
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: 6 }}>Contact number</label>
-              <input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #dbe4ff' }} />
-            </div>
-          </div>
+                <div className="profile-field">
+                  <label className="profile-label">Specialization</label>
+                  <input className="profile-input" value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
+                </div>
 
-          <div style={{ marginTop: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button type="submit" style={{ background: 'linear-gradient(135deg,var(--brand-1),var(--brand-2))', color: 'white', padding: '0.6rem 1rem', borderRadius: 8, border: 'none', fontWeight: 700 }}>Save profile</button>
-            {error && <div style={{ color: '#b91c1c' }}>{error}</div>}
-          </div>
-        </form>
+                <div className="profile-field full-width">
+                  <label className="profile-label">Contact number</label>
+                  <input className="profile-input" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} />
+                </div>
+              </div>
 
-        <div style={{ background: '#ffffff', padding: 20, borderRadius: 8, border: '1px solid #eef2f7' }}>
-          <h3 style={{ marginTop: 0 }}>Course details</h3>
-          <div style={{ marginTop: 8 }}>
+              <div className="profile-save-row">
+                <button type="submit" className="btn-save">Save profile</button>
+                <button type="button" className="btn-cancel" onClick={handleCancel}>Cancel</button>
+                {error && <div className="profile-error">{error}</div>}
+              </div>
+            </form>
+          )}
+        </div>
+
+        <aside className="profile-sidebar">
+          <h3>Course details</h3>
+          <div>
             <strong>Course profiles</strong>
-            <ul style={{ marginTop: 8, paddingLeft: 16 }}>
+            <ul className="profile-course-list">
               {enrollments.length === 0 ? (
-                <li style={{ color: '#6b7280' }}>No courses yet (will be fetched from database)</li>
+                <li className="muted">No courses yet (will be fetched from database)</li>
               ) : (
                 enrollments.map((enr) => (
-                  <li key={enr.courseId} style={{ marginBottom: 8 }}>
-                    <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/courses/${encodeURIComponent(enr.courseId)}`, { state: { courseData: enr.courseDetails } }) }} style={{ color: 'var(--brand-1)' }}>{enr.courseName} ({enr.courseId})</a>
+                  <li key={enr.courseId}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/courses/${encodeURIComponent(enr.courseId)}`, { state: { courseData: enr.courseDetails } }) }} className="link-brand">{enr.courseName} ({enr.courseId})</a>
                   </li>
                 ))
               )}
             </ul>
           </div>
-        </div>
+        </aside>
       </div>
+      <Footer />
     </div>
   )
 }
