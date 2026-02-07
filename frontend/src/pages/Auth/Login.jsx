@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,6 +25,41 @@ const Login = () => {
       // if (!response.ok) throw new Error('Login failed')
       // const data = await response.json()
       // Store token and redirect
+        const fakeResponse = {
+            role: 'student',
+            user: {
+                id: 1,
+                name: 'Demo Student',
+                email: email,
+                firstName: 'Demo'
+            }
+        }
+
+        localStorage.setItem('user', JSON.stringify(fakeResponse.user))
+        localStorage.setItem('role', fakeResponse.role)
+
+        if(fakeResponse.role === 'student') {
+            navigate('/student')
+        }
+        // const response = await fetch("http://127.0.0.1:8000/auth/login", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ email, password })
+        // })
+
+        // if (!response.ok) throw new Error("Invalid credentials")
+
+        // const data = await response.json()
+        // const { role, user } = data
+
+        // // ROLE BASED NAVIGATION
+        // if (role === "student") {
+        //   navigate("/student", { state: { user } })
+        // } else if (role === "instructor") {
+        //   navigate("/instructor", { state: { user } })
+        // } else if (role === "administrator") {
+        //   navigate("/admin", { state: { user } })
+        // }
       console.log('Login attempt:', { email, password, rememberMe })
       // Simulate success after 1s
       setTimeout(() => {
@@ -87,7 +123,8 @@ const Login = () => {
                 />
                 Remember me
               </label>
-              <a href="/forgot-password" className="form-link">
+              <a href="/forgot-password" className="form-link"> 
+                {/* {Implement forgot password mechanism later} */}
                 Forgot password?
               </a>
             </div>

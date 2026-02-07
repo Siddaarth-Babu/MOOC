@@ -337,7 +337,362 @@ h3{color:var(--brand-1)}
   color: var(--brand-2);
 }
 
+/* ===== STUDENT HOME PAGE ===== */
+.student-home-container {
+  padding: 2rem 1rem;
+}
+
+.student-welcome-section {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.student-welcome-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 0.5rem;
+}
+
+.student-welcome-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.student-enrollments-btn {
+  background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.student-enrollments-btn:hover {
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ===== STUDENT NAVBAR ===== */
+.student-navbar {
+  background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
+  color: white;
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.student-nav-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.student-nav-logo {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: white;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.student-nav-links {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+}
+
+.student-nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: opacity 0.2s ease;
+  position: relative;
+}
+
+.student-nav-link:hover {
+  opacity: 0.9;
+}
+
+.student-nav-profile {
+  position: relative;
+}
+
+.student-profile-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  font-size: 1.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.student-profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  min-width: 200px;
+  z-index: 60;
+}
+
+.student-profile-header {
+  padding: 1rem 1.25rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  color: #222;
+  font-weight: 600;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.student-dropdown-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  color: #222;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.student-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.student-dropdown-item:hover {
+  background: #f9fafb;
+  color: var(--brand-1);
+}
+
+.student-logout-btn {
+  color: #991b1b;
+}
+
+.student-logout-btn:hover {
+  background: #fef2f2;
+}
+
+/* ===== STUDENT FOOTER ===== */
+.student-footer {
+  background: linear-gradient(135deg, #222 0%, #111 100%);
+  color: white;
+  padding: 2rem 1rem;
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.student-footer-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.student-footer-quote {
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 0;
+  color: #e5e7eb;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .student-nav-container {
+    gap: 1rem;
+  }
+  
+  .student-nav-links {
+    gap: 1rem;
+  }
+  
+  .student-nav-link {
+    font-size: 0.95rem;
+  }
+  
+  .student-footer-quote {
+    font-size: 1rem;
+  }
+}
+
 @media (max-width: 640px) {
+  .student-navbar {
+    padding: 0.75rem 0;
+  }
+  
+  .student-nav-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .student-nav-links {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .student-nav-logo {
+    font-size: 1.25rem;
+  }
+  
+  .student-profile-dropdown {
+    left: 0;
+    right: auto;
+  }
+}
+
+.student-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.student-course-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.student-course-item:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.student-course-title {
+  color: var(--brand-1);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.student-course-description {
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+
+.student-course-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.student-course-link {
+  color: var(--brand-1);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.student-course-link:hover {
+  color: var(--brand-2);
+}
+
+.student-course-progress {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.student-loading,
+.student-error,
+.student-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+}
+
+.student-loading {
+  color: #6b7280;
+}
+
+.student-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.student-empty {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .student-welcome-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .student-enrollments-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .student-nav-container {
+    gap: 1rem;
+  }
+  
+  .student-nav-links {
+    gap: 1rem;
+  }
+  
+  .student-nav-link {
+    font-size: 0.95rem;
+  }
+  
+  .student-footer-quote {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .student-home-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .student-welcome-title {
+    font-size: 1.25rem;
+  }
+  
+  .student-courses-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .auth-card {
     padding: 1.5rem;
   }
