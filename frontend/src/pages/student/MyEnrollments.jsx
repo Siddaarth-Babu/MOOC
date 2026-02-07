@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import CourseCard from '../../components/student/CourseCard'
+import Navbar from '../../components/student/Navbar'
+import Footer from '../../components/student/Footer'
 
 const MyEnrollments = () => {
   const [filterStatus, setFilterStatus] = useState('all')
@@ -513,7 +515,10 @@ const MyEnrollments = () => {
   }, [enrolledCourses, filterStatus, searchQuery, sortBy])
 
   return (
-    <div className="my-enrollments">
+    <div className='my-enrollments-wrapper'>
+      <Navbar />
+      <div className="my-enrollments">
+      
       <div className="enrollments-header">
         <h1 className="enrollments-title">My courses</h1>
         <p className="enrollments-subtitle">Course overview</p>
@@ -588,6 +593,8 @@ const MyEnrollments = () => {
           )}
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   )
 }

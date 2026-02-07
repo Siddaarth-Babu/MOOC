@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import Navbar from '../../components/student/Navbar'
+import Footer from '../../components/student/Footer'
 
 // Student home: reads `user` from localStorage, redirects to login if missing,
 // fetches enrolled courses from API and displays them.
@@ -90,19 +92,22 @@ const Home = () => {
   }
 
   return (
-    <div className="container student-home-container">
-      <div className="student-welcome-section">
-        <div>
-          <h2 className="student-welcome-title">Welcome{user?.firstName ? `, ${user.firstName}` : user?.name ? `, ${user.name}` : ''}</h2>
-          <p className="student-welcome-subtitle">Here are your enrolled courses and progress.</p>
+    <div className="student-home">
+      <Navbar />
+      <div className="container student-home-container">
+        <div className="student-welcome-section">
+          <div>
+            <h2 className="student-welcome-title">Welcome{user?.firstName ? `, ${user.firstName}` : user?.name ? `, ${user.name}` : ''}</h2>
+            <p className="student-welcome-subtitle">Here are your enrolled courses and progress.</p>
+          </div>
         </div>
-        <Link to="/student/my-enrollments" className="student-enrollments-btn">My Enrollments</Link>
-      </div>
 
-      <section>
-        <h3 className="section-title">Your Courses</h3>
-        {renderCourses()}
-      </section>
+        <section>
+          <h3 className="section-title">Your Courses</h3>
+          {renderCourses()}
+        </section>
+      </div>
+      <Footer />
     </div>
   )
 }

@@ -24,7 +24,7 @@ const App = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/courses" element={<CourseCard />} />
         <Route path="/courses/:id" element={<CourseDetails />} />
-        <Route path="/enrollments" element={<MyEnrollments />} />
+        <Route path="/student/enrollments" element={<MyEnrollments />} />
         <Route path="/coursepage" element={<CoursePage />} />
       </Routes>
     </div>
