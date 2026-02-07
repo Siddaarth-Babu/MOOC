@@ -498,3 +498,134 @@ h3{color:var(--brand-1)}
   }
 }
 
+/* ===== Course Card (student) ===== */
+.course-card{background:white;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.06);max-width:420px}
+.course-card .course-banner{height:120px;background-image:linear-gradient(135deg,var(--brand-1),var(--brand-2));background-size:cover;background-position:center}
+.course-info{padding:1rem 1rem 1.2rem;display:flex;align-items:flex-start}
+.course-text{flex:1}
+.course-title{color:var(--brand-1);font-weight:700;font-size:1rem;margin:0 0 0.5rem}
+.course-meta{list-style:none;padding:0;margin:0;color:#444;font-size:0.92rem;display:flex;flex-direction:column;gap:0.45rem}
+.course-meta li{display:flex;justify-content:space-between;gap:0.5rem}
+.course-meta .meta-label{font-weight:600;color:#6b7280;letter-spacing:0.02em}
+.course-meta .meta-val{font-weight:700;color:#111;text-align:right}
+
+@media (max-width:520px){.course-card{max-width:100%}.course-banner{height:96px}}
+
+/* Clickable card states */
+.course-card{cursor:pointer;transition:transform 0.14s ease,box-shadow 0.14s ease}
+.course-card:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(0,0,0,0.12)}
+.course-card:focus{outline:3px solid rgba(102,126,234,0.12);outline-offset:4px}
+
+/* ===== Course Details Page ===== */
+.course-details{min-height:100vh;background:#f8f9ff}
+
+/* Course Header */
+.course-header{background:white;border-bottom:1px solid #e5e7eb}
+.course-header-banner{height:200px;background:linear-gradient(135deg,var(--brand-1),var(--brand-2));background-size:cover;background-position:center}
+.course-header-content{padding:2rem;max-width:1100px;margin:0 auto}
+.course-details-title{color:#222;font-size:2rem;font-weight:700;margin:1rem 0 0.5rem}
+.course-meta-info{color:#6b7280;font-size:0.95rem;margin:0}
+
+/* Tabs Navigation */
+.course-tabs-nav{display:flex;gap:0;border-bottom:1px solid #e5e7eb;background:white;position:sticky;top:0;z-index:30;max-width:1100px;margin:0 auto;padding:0 1rem}
+.tab-btn{background:none;border:none;color:#6b7280;padding:1rem 1.5rem;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s ease;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab-btn:hover{color:var(--brand-1)}
+.tab-btn.active{color:var(--brand-1);border-bottom-color:var(--brand-1)}
+
+/* Tab Content Area */
+.course-tabs-content{max-width:1100px;margin:0 auto;padding:2rem 1rem;background:white}
+.tab-panel{min-height:400px}
+
+/* Content Sections */
+.content-section{margin-bottom:0.5rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.section-header{width:100%;background:white;border:none;padding:0.4rem 1.25rem;text-align:left;cursor:pointer;display:flex;align-items:center;gap:0.75rem;font-size:0.9rem;font-weight:700;color:#222;transition:background 0.2s ease}
+.section-header:hover{background:#f9fafb}
+.section-arrow{display:inline-block;transition:transform 0.2s ease;color:#222;font-size:0.8rem}
+.section-arrow.open{transform:rotate(0deg)}
+.section-title{flex:1}
+
+.section-content{padding:0;background:white;border-top:none}
+.content-item{display:flex;align-items:center;gap:1rem;padding:0.875rem 1.25rem;border-bottom:1px solid #e5e7eb;cursor:pointer;transition:background 0.2s ease}
+.content-item:last-child{border-bottom:none}
+.content-item:hover{background:#ffffff}
+.item-icon{font-size:1.2rem;flex-shrink:0}
+.item-title{color:var(--brand-1);font-weight:500;font-size:0.9rem}
+
+/* Details Tab */
+.details-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem}
+.detail-field{display:flex;flex-direction:column}
+.detail-field label{font-weight:700;color:#374151;font-size:0.875rem;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.02em}
+.detail-field p{color:#222;font-size:1rem;margin:0;padding:0.75rem 0}
+
+/* Grades Tab */
+.grades-content{display:flex;flex-direction:column;gap:2rem}
+.grades-table{width:100%;border-collapse:collapse;background:white;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.grades-table th{background:#f9fafb;padding:1rem;text-align:left;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;font-size:0.875rem}
+.grades-table td{padding:1rem;border-bottom:1px solid #e5e7eb;color:#222;font-size:0.95rem}
+.grades-table tr:last-child td{border-bottom:none}
+.grades-table tbody tr:hover{background:#f9fafb}
+
+.overall-grade{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:1.5rem;text-align:center}
+.overall-grade h3{color:#166534;margin:0 0 0.5rem}
+.overall-grade .grade-value{color:#166534;font-size:1.5rem;font-weight:700;margin:0}
+
+/* Responsive */
+@media (max-width:768px){
+  .course-header-content{padding:1.5rem}
+  .course-details-title{font-size:1.5rem}
+  .course-tabs-nav{flex-wrap:wrap}
+  .tab-btn{padding:0.75rem 1rem;font-size:0.9rem}
+  .details-content{grid-template-columns:1fr}
+  .section-header{padding:0.75rem 1rem}
+  .grades-table th,.grades-table td{padding:0.75rem 0.5rem;font-size:0.85rem}
+}
+
+/* ===== My Enrollments Page ===== */
+.my-enrollments{min-height:100vh;background:#f8f9ff;padding-bottom:2rem}
+
+.enrollments-header{background:white;padding:2rem 1rem;border-bottom:1px solid #e5e7eb}
+.enrollments-title{font-size:2rem;font-weight:700;color:#222;margin:0 0 0.5rem;max-width:1100px;margin-left:auto;margin-right:auto}
+.enrollments-subtitle{font-size:1rem;font-weight:600;color:#666;margin:0;max-width:1100px;margin-left:auto;margin-right:auto}
+
+.enrollments-container{max-width:1200px;margin:0 auto;padding:2rem 1rem}
+
+/* Controls Section */
+.enrollments-controls{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;padding:1rem;background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+
+.control-group{display:flex}
+.search-group{flex:1;min-width:200px}
+
+.control-select,.control-search{padding:0.625rem 1rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.95rem;font-family:inherit;transition:all 0.2s ease;background:white;color:#222}
+
+.control-select{min-width:140px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;padding-right:2.5rem}
+
+.control-select:hover,.control-search:hover{border-color:var(--brand-1)}
+
+.control-search:focus{outline:none;box-shadow:0 0 0 3px rgba(102,126,234,0.1);border-color:var(--brand-1)}
+
+/* Courses Grid */
+.enrollments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:2rem;margin-bottom:2rem}
+
+.no-courses-message{grid-column:1 / -1;text-align:center;padding:3rem;background:white;border-radius:8px;border:1px solid #e5e7eb}
+.no-courses-message p{color:#6b7280;font-size:1rem;margin:0}
+
+/* Responsive Grid */
+@media (max-width:1024px){
+  .enrollments-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.5rem}
+}
+
+@media (max-width:768px){
+  .enrollments-header{padding:1.5rem 1rem}
+  .enrollments-title{font-size:1.5rem}
+  .enrollments-controls{flex-direction:column;gap:0.75rem}
+  .control-group{width:100%}
+  .control-select,.control-search{width:100%}
+  .enrollments-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+}
+
+@media (max-width:480px){
+  .enrollments-container{padding:1rem 0.5rem}
+  .enrollments-grid{grid-template-columns:1fr;gap:1rem}
+}
+
+
