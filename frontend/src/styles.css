@@ -362,6 +362,53 @@ h3{color:var(--brand-1)}
   font-size: 1rem;
 }
 
+.student-stats-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 280px;
+}
+
+.stats-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.stats-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--brand-1);
+  margin: 0.25rem 0 0;
+}
+
+@media (max-width: 640px) {
+  .student-stats-card {
+    max-width: 100%;
+    padding: 1rem 1.25rem;
+  }
+  
+  .stats-value {
+    font-size: 1.5rem;
+  }
+}
+
 .student-enrollments-btn {
   background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
   color: white;
@@ -812,7 +859,7 @@ h3{color:var(--brand-1)}
 .control-search:focus{outline:none;box-shadow:0 0 0 3px rgba(102,126,234,0.1);border-color:var(--brand-1)}
 
 /* Courses Grid */
-.enrollments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:2rem;margin-bottom:2rem}
+.enrollments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;margin-bottom:2rem}
 
 .no-courses-message{grid-column:1 / -1;text-align:center;padding:3rem;background:white;border-radius:8px;border:1px solid #e5e7eb}
 .no-courses-message p{color:#6b7280;font-size:1rem;margin:0}
