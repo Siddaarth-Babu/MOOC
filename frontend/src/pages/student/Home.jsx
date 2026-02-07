@@ -102,6 +102,14 @@ const Home = () => {
           </div>
         </div>
 
+        <div className="student-stats-card">
+          <div className="stats-icon">📚</div>
+          <div className="stats-content">
+            <p className="stats-label">Courses Enrolled</p>
+            <p className="stats-value">{courses.length}</p>
+          </div>
+        </div>
+
         <section>
           <h3 className="section-title">Your Courses</h3>
           {renderCourses()}
