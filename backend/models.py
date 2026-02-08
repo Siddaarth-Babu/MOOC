@@ -51,10 +51,6 @@ class Course(Base):
     videos = relationship("Video",back_populates="course")
     notes = relationship("Notes",back_populates="course")
     assignment = relationship("Assignment",back_populates="course")
-    # Many-to-Many Links
-    topics = relationship("Topic", secondary=course_topic_link)
-    instructors = relationship("Instructor", secondary=course_instructor_link)
-
 
 class Student(Base):
     __tablename__ = "student"
@@ -67,8 +63,7 @@ class Student(Base):
     email_id = Column(String(100), unique=True, index=True, nullable=False)
     contact_number = Column(String(20))
     specialization = Column(String(100))
-enrolled_ids = [c.course_id for c in student.courses]
-    is_enrolled = course_id in enrolled_ids
+
 class Instructor(Base):
     __tablename__ = "instructor"
 
@@ -76,9 +71,6 @@ class Instructor(Base):
     name = Column(String(100), nullable=False)
     department = Column(String(100))
     email_id = Column(String(100), unique=True, nullable=False)
-
-    # Many to Many
-    courses = relationship("Course", back_populates="instructor",secondary=course_instructor_link)
 
 class Video(Base):
     __tablename__ = "video"
@@ -134,9 +126,6 @@ class Topic(Base):
 
     topic_id = Column(Integer, primary_key=True, index=True)
     topic_name = Column(String(100))
-
-    # Many to Many
-    courses = relationship("Course",secondary=course_topic_link,back_populates="topic")
 
 class Program(Base):
     __tablename__ = "program"

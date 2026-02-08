@@ -49,7 +49,6 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
                 status_code=status.HTTP_403_FORBIDDEN, 
                 detail=f"Incorrect enrollment key for the {user_data.role} role."
             )
-ho
     # 3. Hash the password and save the user
     hashed_password = pwd_context.hash(user_data.password)
     
@@ -115,7 +114,7 @@ def student_all_courses(
     return {
         "student_name": student.name,
         "catalog": all_courses,
-        "my_list": student.courses # Using column from Student table
+        "my_list": crud.get_student_courses(db,student.student_id)  # Using column from Student table
     }
 
 @app.get("/student/home")
@@ -126,7 +125,7 @@ def student_home(
     
     return {
         "student_name": student.name,
-        "my_list": student.courses 
+        "my_list": crud.get_student_courses(db,student.student_id) 
     }
 
 
@@ -151,10 +150,10 @@ def get_student_course_view(
             "enrolled": False,
             "title": course.course_name,
             "duration": course.duration,
-            "instructor": course.instructors,
+            "instructor": crud.get_course_instructors(db,course.course_id),
             "fees": course.course_fees,
             "skill-level": course.skill_level,
-            "topics": course.topics,
+            "topics": crud.get_course_topics(db,course.course_id),
             "institute": db.query(models.University).filter(models.University.institute_id == course.institute_id).first()
         }
 
@@ -176,7 +175,8 @@ def get_inst_course_view(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     
-    allowed_ids = [i.instructor_id for i in course.instructors]
+    instructors = crud.get_course_instructors(db, course.course_id)
+    allowed_ids = [i.instructor_id for i in instructors]
 
     if instr.instructor_id not in allowed_ids:
         raise HTTPException(
@@ -186,7 +186,7 @@ def get_inst_course_view(
     
     other_instructors = [
         i.name
-        for i in course.instructors 
+        for i in instructors 
         if i.instructor_id != instr.instructor_id
     ]
 
@@ -195,3 +195,16 @@ def get_inst_course_view(
         "co_instructors": other_instructors # Show them who else is teaching
     }
 
+
+@app.get("/instructor/courses/{course_id}/stud_list")
+def grade_students(
+    course_id: int,
+    db: Session = Depends(get_db),
+    instr: models.Instructor = Depends(get_curr_instructor)
+):
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    stud_list = 

@@ -43,6 +43,30 @@ def get_all_courses(db : Session,skip: int = 0, limit: int = 20):
 def get_course_by_id(db: Session, course_id: int):
     return db.query(models.Course).filter(models.Course.course_id == course_id).first()
 
+def get_student_courses(db: Session, student_id: int):
+    return db.query(models.Course).join(
+        models.course_student_link, 
+        models.Course.course_id == models.course_student_link.c.course_id
+    ).filter(
+        models.course_student_link.c.student_id == student_id
+    ).all()
+
+def get_course_instructors(db:Session, course_id:int):
+    return db.query(models.Instructor).join(
+        models.course_instructor_link,
+        models.Instructor.instructor_id == models.course_instructor_link.c.instructor_id
+    ).filter(
+        models.course_instructor_link.course_id == course_id
+    ).all()
+
+def get_course_topics(db:Session, course_id:int):
+    return db.query(models.Topic).join(
+        models.course_topic_link,
+        models.Topic.topic_id == models.course_topic_link.c.topic_id
+    ).filter(
+        models.course_topic_link.c.course_id == course_id
+    ).all()
+
 """ Instructor Crud operations """
 
 def create_instructor(db:Session,instructor:schemas.InstructorCreate):
@@ -86,7 +110,7 @@ def create_admin(db:Session, admin:schemas.SystemAdminCreate):
 """ Topic crud operations  """
 
 def create_topic(db:Session, topic:schemas.TopicCreate):
-    db_topic = models.SystemAdmin(
+    db_topic = models.Topic(
         topic_name = topic.topic_name,
     )
     db.add(db_topic)
@@ -144,7 +168,7 @@ def add_videos(db: Session, videos: schemas.VideoCreate):
     return db_video
 
 def remove_textbook(db: Session, text_id: int):
-    db_text = db.query(models.Textbook).filter(models.Textbook.book_id == text_id).first()
+    db_text = db.query(models.Textbook).filter(models.Textbook.textbook_id == text_id).first()
 
     if db_text:
         db.delete(db_text)
@@ -336,7 +360,7 @@ def update_assignment(db: Session, assignment_id: int, submission_url: str):
     db_assignment = db.query(models.Assignment).filter(models.Assignment.assignment_id == assignment_id).first()
 
     if db_assignment:
-        db_assignment.submission_url = submission_url
+        db_assignment.submission_url_link = submission_url
         db.commit()
         db.refresh(db_assignment)
 
