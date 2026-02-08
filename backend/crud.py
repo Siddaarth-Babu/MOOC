@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 import models,schemas
+import datetime
 
 """ Course Crud Operations """
 
@@ -131,12 +132,12 @@ def remove_topic_by_id(db:Session, topic_id: int):
 
 """ Materials crud operations """
 
-def add_textbook(db: Session, textb:schemas.TextbookCreate):
+def add_textbook(db: Session, textb:schemas.TextbookCreate, c_id: int):
     db_topic = models.Textbook(
         title = textb.title,
         author = textb.author,
         publisher = textb.publisher,
-        course_id = textb.course_id
+        course_id = c_id
     )
     db.add(db_topic)
     db.commit()
@@ -155,12 +156,12 @@ def add_notes(db: Session, notes: schemas.NotesCreate):
     db.refresh(db_notes)
     return db_notes
 
-def add_videos(db: Session, videos: schemas.VideoCreate):
+def add_videos(db: Session, videos: schemas.VideoCreate, c_id: int):
     db_video = models.Video(
         title = videos.title,
         duration = videos.duration,
         url_link = videos.url_link,
-        course_id = videos.course_id
+        course_id = c_id
     )
     db.add(db_video)
     db.commit()
@@ -338,18 +339,19 @@ def get_program_by_id(db: Session,program_id: int):
 
 """ Assignment CRUD operations """
 
-def create_assignment(db: Session, assignment: schemas.AssignmentCreate):
+def create_assignment(db: Session, assignment: schemas.AssignmentCreate,c_id : int):
     new_assignment = models.Assignment(
         title=assignment.title,
         description=assignment.description,
         due_date=assignment.due_date,
         assignment_url_link=assignment.assignment_url_link,
-        course_id=assignment.course_id
+        course_id=c_id
     )
     db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
     return new_assignment
+
 def get_assignment_by_course_id(db: Session, course_id: int):
     return db.query(models.Assignment).filter(models.Assignment.course_id == course_id).all()
 
@@ -365,6 +367,21 @@ def update_assignment(db: Session, assignment_id: int, submission_url: str):
         db.refresh(db_assignment)
 
     return db_assignment
+
+def create_submission(db: Session, subm: schemas.SubmissionCreate, student_id: int):
+    # Create the model instance
+    db_submission = models.StudentSubmission(
+        assignment_id=subm.assignment_id,
+        submission_url=subm.submission_url,
+        student_id=student_id,
+        status="Submitted", # Default status
+        submitted_at=datetime.utcnow()
+    )
+    
+    db.add(db_submission)
+    db.commit()
+    db.refresh(db_submission)
+    return db_submission
 
 
 def delete_assignment(db: Session, assignment_id: int):

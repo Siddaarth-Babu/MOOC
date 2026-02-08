@@ -1,7 +1,7 @@
 from database import Base
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, CheckConstraint, Table
+from sqlalchemy import Column, Integer, String, Date, ForeignKey,DateTime, CheckConstraint, Table
 from sqlalchemy.orm import relationship
-
+import datetime
 course_topic_link = Table(
     "course_topic_link",
     Base.metadata,
@@ -162,7 +162,18 @@ class Assignment(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(500))
     assignment_url_link = Column(String(200), nullable=False)
-    submission_url_link = Column(String(200))
     marks = Column(Integer)
     due_date = Column(Date)
     course_id = Column(Integer, ForeignKey("course.course_id"))
+
+class StudentSubmission(Base):
+    __tablename__ = "student_submission"
+
+    submission_id = Column(Integer, primary_key=True, index=True)
+    assignment_id = Column(Integer, ForeignKey("assignment.assignment_id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("student.student_id"), nullable=False)
+    
+    submission_url = Column(String(200), nullable=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    obtained_marks = Column(Integer)  # Marks specifically for this student's work
+    status = Column(String(20))       # e.g., "Graded", "Pending", "Late"

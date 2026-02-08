@@ -3,12 +3,13 @@ from fastapi import FASTAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 import schemas,models
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.database import get_db
-from datetime import datetime, timedelta,timezone
+from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 import crud
-from security import get_curr_student, get_curr_instructor
+from security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 
 # Load the variables from .env into the system
 load_dotenv()
@@ -129,8 +130,6 @@ def student_home(
     }
 
 
-""" Routing for Courses """
-
 @app.get("/student/courses/{course_id}")
 def get_student_course_view(
     course_id: int, 
@@ -162,6 +161,18 @@ def get_student_course_view(
         "enrolled": True,
         "details": course, # Includes assignments, assessments, etc.
     }
+
+@app.post("/student/courses/{course_id}/submit_asg")
+def hand_assignment(
+    course_id: int,
+    subm: schemas.SubmissionCreate,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    return crud.create_submission(db,subm,student.student_id)
+
+
+""" Routing for Instructor """
 
 @app.get("/instructor/courses/{course_id}")
 def get_inst_course_view(
@@ -202,9 +213,216 @@ def grade_students(
     db: Session = Depends(get_db),
     instr: models.Instructor = Depends(get_curr_instructor)
 ):
+    # 1. Verify the course exists (you already have this)
     course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
-
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+
+    # 2. Join Student and Evaluation
+    # We query both models at the same time
+    results = db.query(models.Student, models.Evaluation).join(
+        models.Evaluation
+    ).filter(
+        models.Evaluation.course_id == course_id
+    ).all()
+
+    # 3. Format for React
+    # This creates a list of dictionaries containing both Student and Grade info
+    graded_list = []
+    for student, evaluation in results:
+        graded_list.append({
+            "student_id": student.student_id,
+            "name": student.name,
+            "email": student.email_id,
+            "marks": evaluation.marks,
+            "grade": evaluation.grade,
+            "status": evaluation.pass_fail,
+            "evaluation_date": evaluation.date_of_evaluation
+        })
+
+    return graded_list
+
+
+@app.get("/instructor/courses/{course_id}/stud_list/{student_id}")
+def get_student_course_detail(
+    course_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    instr: models.Instructor = Depends(get_curr_instructor)
+):
+    # 1. Fetch Student Basic Info
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # 2. Fetch Course Evaluation (The "Final" Grade/Marks)
+    evaluation = db.query(models.Evaluation).filter(
+        models.Evaluation.course_id == course_id,
+        models.Evaluation.student_id == student_id
+    ).first()
+
+    # 3. Fetch All Submissions + Assignment Details (The "Direct" Join)
+    # We join Submission with Assignment to get the Title and Total Marks
+    submissions = db.query(
+        models.StudentSubmission, 
+        models.Assignment
+    ).join(
+        models.Assignment, 
+        models.StudentSubmission.assignment_id == models.Assignment.assignment_id
+    ).filter(
+        models.StudentSubmission.student_id == student_id,
+        models.Assignment.course_id == course_id
+    ).all()
+
+    # 4. Format for React
+    return {
+        "student_name": student.name,
+        "course_overall_performance": {
+            "total_marks": evaluation.marks if evaluation else "Not Evaluated",
+            "grade": evaluation.grade if evaluation else "N/A",
+            "status": evaluation.pass_fail if evaluation else "Pending"
+        },
+        "assignments_report": [
+            {
+                "assignment_title": assign.title,
+                "submission_url": sub.submission_url,
+                "marks_obtained": sub.obtained_marks,
+                "out_of": assign.marks,
+                "submitted_at": sub.submitted_at
+            } for sub, assign in submissions
+        ]
+    }
+
+@app.post("/instructor/courses/{course_id}/stud_list/{student_id}/edit_grade")
+def edit_grade(
+    course_id: int,
+    student_id: int,
+    grade_data: schemas.GradeUpdate, # This is your request body
+    db: Session = Depends(get_db),
+    instr: models.Instructor = Depends(get_curr_instructor)
+):
+    # 1. Look for existing evaluation
+    db_eval = db.query(models.Evaluation).filter(
+        models.Evaluation.course_id == course_id,
+        models.Evaluation.student_id == student_id
+    ).first()
+
+    # 2. If it doesn't exist, create it; if it does, update it
+    if not db_eval:
+        db_eval = models.Evaluation(
+            course_id=course_id,
+            student_id=student_id,
+            marks=grade_data.marks,
+            grade=grade_data.grade,
+            pass_fail=grade_data.pass_fail,
+            date_of_evaluation=date.today()
+        )
+        db.add(db_eval)
+    else:
+        db_eval.marks = grade_data.marks
+        db_eval.grade = grade_data.grade
+        db_eval.pass_fail = grade_data.pass_fail
+        db_eval.date_of_evaluation = date.today()
+
+    db.commit()
+    db.refresh(db_eval)
     
-    stud_list = 
+    return {"message": "Grade updated successfully", "updated_grade": db_eval}
+
+@app.post("/instructor/courses/{course_id}/add_assign")
+def post_assignment(
+    course_id: int,
+    assign: schemas.AssignmentCreate,
+    db: Session = Depends(get_db)
+):
+    return crud.create_assignment(db,assign, course_id)
+
+@app.post("/instructor/courses/{course_id}/remove_assign")
+def remove_assignment(
+    course_id: int,
+    assign_id: int,
+    db: Session = Depends(get_db)
+):
+    return crud.delete_assignment(db,assign_id)
+
+
+@app.post("/instructor/courses/{course_id}/remove_video")
+def remove_video(
+    course_id: int,
+    video_id: int,
+    db: Session = Depends(get_db)
+):
+    return crud.remove_videos(db,video_id)
+
+@app.post("/instructor/courses/{course_id}/remove_notes")
+def remove_notes(
+    course_id: int,
+    notes_id: int,
+    db: Session = Depends(get_db)
+):
+    return crud.remove_notes(db,notes_id)
+
+@app.post("/instructor/courses/{course_id}/remove_textb")
+def post_textbook(
+    course_id: int,
+    text_id: int,
+    db: Session = Depends(get_db)
+):
+    return crud.add_textbook(db,text_id)
+
+
+""" Data Analyst Routing """
+
+@app.get("/analyst/home/")
+def get_advanced_stats(
+    db: Session = Depends(get_db),
+    analyst: models.DataAnalyst = Depends(get_curr_analyst)
+):
+    # 1. TOTAL REVENUE (Sum of fees of all courses for every enrollment)
+    # Logic: Join Course and the Link table, then sum the course_fees
+    total_revenue = db.query(
+        func.sum(models.Course.course_fees)
+    ).join(
+        models.course_student_link
+    ).scalar() or 0  # .scalar() returns the single number result
+
+    # 2. REVENUE PER COURSE (For the Pie Chart)
+    revenue_per_course = db.query(
+        models.Course.course_name,
+        func.sum(models.Course.course_fees).label("total_revenue")
+    ).join(
+        models.course_student_link
+    ).group_by(
+        models.Course.course_id
+    ).all()
+
+    # 3. GRADE DISTRIBUTION (How many students got A, B, etc.)
+    grade_dist = db.query(
+        models.Evaluation.grade,
+        func.count(models.Evaluation.evaluation_id)
+    ).group_by(
+        models.Evaluation.grade
+    ).all()
+
+    # 4. ENROLLMENTS BY COUNTRY
+    country_dist = db.query(
+        models.Student.country,
+        func.count(models.Student.student_id)
+    ).group_by(
+        models.Student.country
+    ).all()
+
+    # Format for React
+    return {
+        "summary": {
+            "total_revenue": total_revenue,
+            "total_enrollments": db.query(models.course_student_link).count(),
+        },
+        "charts": {
+            "revenue_data": [{"name": row[0], "value": row[1]} for row in revenue_per_course],
+            "grade_data": [{"grade": row[0], "count": row[1]} for row in grade_dist],
+            "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
+        }
+    }
+
+

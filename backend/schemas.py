@@ -1,6 +1,7 @@
 from __future__ import annotations # fixes the circular dependency
 from pydantic import BaseModel, EmailStr, Field
 from datetime import date
+import datetime
 from typing import Optional
 # Pydantic is a data validatio library
 # Inheriting base model
@@ -121,7 +122,7 @@ class TextbookBase(BaseModel):
     edition: Optional[str] = None
 
 class TextbookCreate(TextbookBase):
-    course_id: int # One-to-One link
+    pass
 
 class Textbook(TextbookBase):
     textbook_id: int
@@ -135,7 +136,7 @@ class VideoBase(BaseModel):
     duration: int
 
 class VideoCreate(VideoBase):
-    course_id: int
+    pass
 
 class Video(VideoBase):
     video_id: int
@@ -149,7 +150,7 @@ class NotesBase(BaseModel):
     document_type: str
 
 class NotesCreate(NotesBase):
-    course_id: int
+    pass
 
 class Notes(NotesBase):
     notes_id: int
@@ -194,7 +195,7 @@ class AssignmentBase(BaseModel):
     marks: int
 
 class AssignmentCreate(AssignmentBase):
-    course_id: int
+    pass
 
 class Assignment(AssignmentBase):
     assignment_id: int
@@ -221,3 +222,35 @@ class User(UserBase):
 
     class Config:
         from_attributes = True # Allows Pydantic to read SQLAlchemy models
+
+# schemas.py
+class GradeUpdate(BaseModel):
+    marks: int = Field(..., ge=0, le=100) # Validates marks are between 0-100
+    grade: str
+    pass_fail: str
+
+
+class SubmissionBase(BaseModel):
+    submission_url: str # Or HttpUrl for stricter validation
+    assignment_id: int
+
+class SubmissionCreate(SubmissionBase):
+    """Used when a student submits their work"""
+    # student_id is usually taken from the Auth token, not the body
+    pass
+
+class SubmissionUpdate(BaseModel):
+    """Used by the Instructor to grade the submission"""
+    obtained_marks: int
+    status: str # e.g., "Graded"
+
+class StudentSubmission(SubmissionBase):
+    """The full representation of the submission"""
+    submission_id: int
+    student_id: int
+    submitted_at: datetime
+    obtained_marks: Optional[int] = None
+    status: Optional[str] = "Pending"
+
+    class Config:
+        from_attributes = True
