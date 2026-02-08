@@ -13,6 +13,10 @@ const Content = () => {
   const [item, setItem] = useState(null)
   const [contents, setContents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showSubmitModal, setShowSubmitModal] = useState(false)
+  const [submissionLink, setSubmissionLink] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submissionStatus, setSubmissionStatus] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -75,6 +79,45 @@ const Content = () => {
   // Check if any content has grading
   const hasGrading = contents.some((c) => c.grading)
 
+  const handleOpenSubmit = () => {
+    setShowSubmitModal(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!submissionLink.trim()) {
+      alert('Please enter your submission link')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null')
+      const payload = {
+        section,
+        itemId,
+        link: submissionLink.trim(),
+        user: user?.email || user?.id || 'anonymous'
+      }
+      // POST to submissions endpoint (adjust endpoint as backend expects)
+      const res = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error('Failed to submit')
+      const data = await res.json()
+      setSubmissionStatus({ success: true, data })
+      setShowSubmitModal(false)
+      setSubmissionLink('')
+      alert('Submission uploaded successfully')
+    } catch (err) {
+      console.error(err)
+      setSubmissionStatus({ success: false, error: err.message })
+      alert('Submission failed')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="student-page">
       <Navbar />
@@ -104,9 +147,29 @@ const Content = () => {
           {isGraded && hasGrading && (
             <div className="submission-section">
               <h3>Submission</h3>
-              <p className="submission-status">Status: <strong>Not Submitted</strong></p>
+              <p className="submission-status">Status: <strong>{submissionStatus?.success ? 'Submitted' : 'Not Submitted'}</strong></p>
               <p className="submission-points">Points: <strong>{contents.find(c => c.grading)?.grading?.totalPoints || 0}</strong></p>
-              <button className="btn btn-submit">Submit Work</button>
+              <button className="btn btn-submit" onClick={handleOpenSubmit}>Submit Work</button>
+
+              {showSubmitModal && (
+                <div className="modal-overlay" onClick={() => setShowSubmitModal(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <h3>Submit Work</h3>
+                    <p style={{ marginBottom: '0.5rem' }}>Enter a link to your submission (GitHub, Drive, direct file link, etc.)</p>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={submissionLink}
+                      onChange={(e) => setSubmissionLink(e.target.value)}
+                      className="form-input"
+                    />
+                    <div className="modal-actions">
+                      <button className="auth-submit-btn" onClick={handleSubmit} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</button>
+                      <button className="btn" onClick={() => setShowSubmitModal(false)}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

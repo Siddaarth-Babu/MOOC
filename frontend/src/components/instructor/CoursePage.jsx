@@ -448,17 +448,38 @@ const CoursePage = ({ courseData }) => {
               ) : studentCourseData ? (
                 <>
                   {/* Course Content Sections */}
-                  <div style={{ marginBottom: '2rem' }}>
+                    <div style={{ marginBottom: '2rem' }}>
                     <h3 style={{ color: '#ff8c42', marginBottom: '1rem' }}>Course Content</h3>
                     {studentCourseData.sections && Object.entries(studentCourseData.sections).map(([sectionKey, items]) => (
                       <div key={sectionKey} style={{ marginBottom: '1rem' }}>
                         <h4 style={{ textTransform: 'capitalize', color: '#222' }}>{sectionKey}</h4>
                         <div>
-                          {items && items.map((item) => (
-                            <div key={item.id} style={{ padding: '0.5rem 0', color: '#666' }}>
-                              <span>{item.icon} {item.title}</span>
-                            </div>
-                          ))}
+                          {items && items.map((item) => {
+                            // find submission for this student & item (may be in different shapes depending on API)
+                            const submissions = studentCourseData.submissions || selectedStudent?.submissions || []
+                            const submission = submissions.find((s) => String(s.itemId) === String(item.id) || String(s.itemId) === String(item.id))
+
+                            return (
+                              <div key={item.id} style={{ padding: '0.5rem 0', color: '#666' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div><span>{item.icon} {item.title}</span></div>
+                                  {(sectionKey === 'assignments' || sectionKey === 'assessments') && (
+                                    <div style={{ marginLeft: '1rem' }}>
+                                      {submission ? (
+                                        <a href={submission.url || submission.link || submission.pdfUrl} target="_blank" rel="noreferrer" style={{ color: '#1f6feb', fontWeight: 600 }}>View Submission</a>
+                                      ) : (
+                                        <span style={{ color: '#999' }}>No submission</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Optionally show extra submission info */}
+                                {submission && submission.filename && (
+                                  <div style={{ fontSize: '0.85rem', color: '#777' }}>{submission.filename}</div>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
