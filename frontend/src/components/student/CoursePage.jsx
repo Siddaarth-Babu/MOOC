@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
 
 const CoursePage = ({ courseData }) => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('content')
   const [expandedSections, setExpandedSections] = useState({
     general: true,
@@ -77,7 +79,7 @@ const CoursePage = ({ courseData }) => {
                 {expandedSections.general && (
                   <div className="section-content">
                     {courseData.sections.general && courseData.sections.general.map((item) => (
-                      <div key={item.id} className="content-item">
+                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/general/${item.id}`)} style={{cursor: 'pointer'}}>
                         <span className="item-icon">{item.icon}</span>
                         <span className="item-title">{item.title}</span>
                       </div>
@@ -100,7 +102,7 @@ const CoursePage = ({ courseData }) => {
                 {expandedSections.materials && (
                   <div className="section-content">
                     {courseData.sections.materials && courseData.sections.materials.map((item) => (
-                      <div key={item.id} className="content-item">
+                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/materials/${item.id}`)} style={{cursor: 'pointer'}}>
                         <span className="item-icon">{item.icon}</span>
                         <span className="item-title">{item.title}</span>
                       </div>
@@ -123,7 +125,7 @@ const CoursePage = ({ courseData }) => {
                 {expandedSections.assignments && (
                   <div className="section-content">
                     {courseData.sections.assignments && courseData.sections.assignments.map((item) => (
-                      <div key={item.id} className="content-item">
+                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/assignments/${item.id}`)} style={{cursor: 'pointer'}}>
                         <span className="item-icon">{item.icon}</span>
                         <span className="item-title">{item.title}</span>
                       </div>
@@ -146,7 +148,7 @@ const CoursePage = ({ courseData }) => {
                 {expandedSections.assessments && (
                   <div className="section-content">
                     {courseData.sections.assessments && courseData.sections.assessments.map((item) => (
-                      <div key={item.id} className="content-item">
+                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/assessments/${item.id}`)} style={{cursor: 'pointer'}}>
                         <span className="item-icon">{item.icon}</span>
                         <span className="item-title">{item.title}</span>
                       </div>

@@ -5,7 +5,9 @@ import Login from './pages/Auth/Login.jsx'
 import Signup from './pages/Auth/Signup.jsx'
 
 import StudentHome from './pages/student/Home.jsx'
+import StudentContent from './pages/student/Content.jsx'
 import InstructorDashboard from './pages/instructor/Home.jsx'
+import InstructorContent from './pages/instructor/Content.jsx'
 import AdminDashboard from './pages/administrator/Dashboard.jsx'
 import ManageUsers from './pages/administrator/ManageUsers.jsx'
 import ManageCoursesAdmin from './pages/administrator/ManageCourses.jsx'
@@ -31,7 +33,9 @@ const App = () => {
         <Route path="/signup" element={<Signup />} />
 
         <Route path="/student" element={<StudentHome />} />
+        <Route path="/student/content/:section/:itemId" element={<StudentContent />} />
         <Route path="/instructor" element={<InstructorDashboard />} />
+        <Route path="/instructor/content/:section/:itemId" element={<InstructorContent />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/manage-users" element={<ManageUsers />} />
         <Route path="/admin/manage-courses" element={<ManageCoursesAdmin />} />

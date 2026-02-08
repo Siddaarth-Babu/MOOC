@@ -880,6 +880,118 @@ h3{color:var(--brand-1)}
 
 @media (max-width:640px){.add-user-grid{grid-template-columns:1fr}}
 
+/* ===== CONTENT PAGES ===== */
+.content-page-wrapper{margin-top:1rem}
+.back-btn{background:transparent;border:1px solid #d1d5db;color:#222;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;margin-bottom:1rem;font-weight:600}
+.back-btn:hover{background:#f3f4f6;border-color:#667eea}
+
+.content-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e5e7eb}
+.content-header h1{margin:0;font-size:1.75rem;color:#222}
+.content-header-instructor{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e5e7eb}
+.content-header-instructor h1{margin:0;font-size:1.75rem;color:#222}
+
+.content-type-badge{display:inline-block;background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:white;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.875rem;font-weight:600;text-transform:capitalize}
+
+.content-main{margin:2rem 0;padding:1.5rem;background:white;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+
+/* Content Item Styling */
+.content-item-title{font-size:1.25rem;color:#222;margin:0.5rem 0;font-weight:700}
+.content-item-desc{color:#555;margin:0.5rem 0;line-height:1.5}
+
+/* Video styling */
+.content-video-wrapper{display:flex;flex-direction:column;gap:1rem}
+.content-video-container{width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+
+/* Notes styling */
+.content-notes-wrapper{display:flex;flex-direction:column;gap:1rem}
+.content-notes-body{background:#f9fafb;padding:1.25rem;border-radius:8px;border-left:4px solid var(--brand-1)}
+.note-line{margin:0.5rem 0;line-height:1.6;color:#222}
+
+/* PDF styling */
+.pdf-card-wrapper{display:flex;flex-direction:column;gap:1rem}
+.pdf-card{display:flex;gap:1rem;padding:1rem;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;align-items:center}
+.pdf-icon{font-size:2rem}
+.pdf-info{flex:1}
+.pdf-title{margin:0;color:#222;font-weight:700}
+.pdf-desc{margin:0.25rem 0 0;color:#6b7280;font-size:0.9rem}
+.pdf-open-btn{display:inline-block;background:var(--brand-1);color:white;padding:0.5rem 1rem;border-radius:6px;text-decoration:none;font-weight:600;transition:all 0.2s;cursor:pointer}
+.pdf-open-btn:hover{background:var(--brand-2);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+
+/* Grading section */
+.content-grading-section{margin-top:1.25rem;padding:1rem;background:#f0fdf4;border-radius:8px;border:1px solid #86efac}
+.content-grading-section h4{color:#166534;margin:0 0 0.5rem;font-weight:700}
+.content-grading-section p{margin:0.25rem 0;color:#166534;font-size:0.95rem}
+
+/* Submission section */
+.submission-section{margin-top:2rem;padding:1.5rem;background:white;border-radius:10px;border:2px solid #e5e7eb}
+.submission-section h3{margin:0 0 1rem;color:#222;font-size:1.25rem}
+.submission-status,.submission-points{margin:0.5rem 0;font-size:1rem;color:#555}
+.btn-submit{background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:white;border:none;margin-top:0.75rem}
+
+/* Instructor add buttons */
+.instructor-actions{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center}
+.action-btn{background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:white;border:none;padding:0.6rem 1.2rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.9rem;transition:all 0.2s;display:inline-block}
+.action-btn:hover{box-shadow:0 4px 12px rgba(102,126,234,0.3);transform:translateY(-2px)}
+
+/* Content items list container */
+.content-items-list{display:flex;flex-direction:column;gap:1.5rem}
+.content-item-wrapper{position:relative}
+.btn-remove-content{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;padding:0.5rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:600;margin-top:0.75rem;transition:all 0.2s}
+.btn-remove-content:hover{background:#fecaca;border-color:#f87171}
+
+/* Modal for adding content */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-content{background:white;padding:2rem;border-radius:10px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal-content h3{margin:0 0 1.5rem;color:#222;font-size:1.25rem}
+.modal-content .form-input{margin-bottom:1rem}
+.modal-actions{display:flex;gap:0.75rem;margin-top:1.5rem}
+
+@media (max-width:768px){
+  .content-header{flex-direction:column;align-items:flex-start}
+  .content-header-instructor{flex-direction:column}
+  .instructor-actions{width:100%}
+  .action-btn{flex:1;min-width:120px}
+  .content-video-container{aspect-ratio:auto;min-height:300px}
+}
+
+@media (max-width:640px){
+  .content-main{padding:1rem}
+  .instructor-actions{flex-direction:column}
+  .action-btn{width:100%}
+}
+
+.users-table table tr:hover{background:#fbfbfd}
+.btn-danger{background:#fee2e2;border:1px solid #fca5a5;color:#7f1d1d;padding:0.3rem 0.6rem;border-radius:6px;cursor:pointer}
+
+@media (max-width:768px){.admin-stats-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
+
+/* Manage Users layout */
+.admin-container{padding:2rem 1rem}
+.manage-header{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.manage-header-actions{display:flex;gap:0.75rem;align-items:center}
+.manage-controls{margin-top:1rem;display:flex;gap:1rem;align-items:center}
+.users-table-wrap{margin-top:1.25rem}
+.users-table{background:white;border-radius:8px;padding:1rem;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+.users-table table{width:100%;border-collapse:collapse}
+.users-table thead tr{color:#374151;text-align:left}
+.users-table th{padding:0.75rem 0.5rem}
+.users-table td{padding:0.9rem 0.5rem;border-top:1px solid #eef2f7}
+.users-row{cursor:pointer}
+.users-row:hover{background:#fbfbfd}
+.role-cell{text-transform:capitalize}
+
+.add-user-form{margin-top:1rem;background:white;padding:1rem;border-radius:8px}
+.add-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.add-user-actions{margin-top:0.75rem;display:flex;gap:0.5rem}
+
+.admin-welcome-title{font-size:1.75rem;margin-bottom:0.25rem}
+.admin-quick-wrap{margin-top:1.75rem}
+.admin-quick-title{margin-bottom:0.75rem}
+
+.muted{color:#6b7280}
+
+@media (max-width:640px){.add-user-grid{grid-template-columns:1fr}}
+
 .student-course-item {
   background: white;
   padding: 1rem;

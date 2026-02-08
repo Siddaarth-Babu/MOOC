@@ -32,21 +32,19 @@ const MyEnrollments = () => {
           description: 'A comprehensive course on computer networks, covering OSI model, TCP/IP, routing, and network security.'
         },
         sections: {
-          general: [{ id: 1, title: 'Announcements', icon: '📢' }],
+          general: [{ id: 'ann1', title: 'Welcome to the Course', icon: '📢' }],
           materials: [
-            { id: 1, title: 'Videos', icon: '🎥' },
-            { id: 2, title: 'Notes', icon: '📝' },
-            { id: 3, title: 'Textbooks', icon: '📚' }
+            { id: 'mat1', title: 'Course Introduction', icon: '📝' },
+            { id: 'mat2', title: 'Python Basics', icon: '🎥' },
+            { id: 'mat3', title: 'Reference Guide', icon: '📚' }
           ],
           assignments: [
-            { id: 1, title: 'Assignment 1 -- Traffic Tracing', icon: '✏️' },
-            { id: 2, title: 'Assignment 2 - UDP Sockets', icon: '✏️' },
-            { id: 3, title: 'Assignment 3 - TCP Protocol', icon: '✏️' }
+            { id: 'asgn1', title: 'Assignment 1 - Basics', icon: '✏️' },
+            { id: 'asgn2', title: 'Assignment 2 - Functions', icon: '✏️' }
           ],
           assessments: [
-            { id: 1, title: 'Quiz 1: OSI Model', icon: '📊' },
-            { id: 2, title: 'Quiz 2: TCP/IP', icon: '📊' },
-            { id: 3, title: 'Final Exam', icon: '🎓' }
+            { id: 'assess1', title: 'Quiz 1 - Concepts', icon: '📊' },
+            { id: 'assess2', title: 'Midterm Exam Resources', icon: '🎓' }
           ]
         },
         details: [

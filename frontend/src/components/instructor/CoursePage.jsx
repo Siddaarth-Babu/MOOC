@@ -138,7 +138,7 @@ const CoursePage = ({ courseData }) => {
                     </div>
                     <div className="section-content">
                       {course.sections?.general?.map((item) => (
-                        <div key={item.id} className="instructor-item">
+                        <div key={item.id} className="instructor-item" onClick={() => navigate(`/instructor/content/general/${item.id}`)} style={{cursor: 'pointer'}}>
                           <span className="item-icon">{item.icon}</span>
                           <span className="item-title">{item.title}</span>
                         </div>
@@ -163,7 +163,7 @@ const CoursePage = ({ courseData }) => {
                     </div>
                     <div className="section-content">
                       {course.sections?.materials?.map((item) => (
-                        <div key={item.id} className="instructor-item">
+                        <div key={item.id} className="instructor-item" onClick={() => navigate(`/instructor/content/materials/${item.id}`)} style={{cursor: 'pointer'}}>
                           <span className="item-icon">{item.icon}</span>
                           <span className="item-title">{item.title}</span>
                         </div>
@@ -188,7 +188,7 @@ const CoursePage = ({ courseData }) => {
                     </div>
                     <div className="section-content">
                       {course.sections?.assignments?.map((item) => (
-                        <div key={item.id} className="instructor-item">
+                        <div key={item.id} className="instructor-item" onClick={() => navigate(`/instructor/content/assignments/${item.id}`)} style={{cursor: 'pointer'}}>
                           <span className="item-icon">{item.icon}</span>
                           <span className="item-title">{item.title}</span>
                         </div>
@@ -213,7 +213,7 @@ const CoursePage = ({ courseData }) => {
                     </div>
                     <div className="section-content">
                       {course.sections?.assessments?.map((item) => (
-                        <div key={item.id} className="instructor-item">
+                        <div key={item.id} className="instructor-item" onClick={() => navigate(`/instructor/content/assessments/${item.id}`)} style={{cursor: 'pointer'}}>
                           <span className="item-icon">{item.icon}</span>
                           <span className="item-title">{item.title}</span>
                         </div>
@@ -239,7 +239,7 @@ const CoursePage = ({ courseData }) => {
                       </div>
                       <div className="section-content">
                         {(course.sections[key] || []).map((item) => (
-                          <div key={item.id} className="instructor-item">
+                          <div key={item.id} className="instructor-item" onClick={() => navigate(`/instructor/content/${key}/${item.id}`)} style={{cursor: 'pointer'}}>
                             <span className="item-icon">{item.icon}</span>
                             <span className="item-title">{item.title}</span>
                           </div>
