@@ -24,6 +24,15 @@ course_instructor_link = Table(
     Column("instructor_id", Integer, ForeignKey("instructor.instructor_id"), primary_key=True)
 )
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, default="student")  # 'student', 'instructor', 'analyst', 'admin'
+    
 class Course(Base):
     __tablename__ = "course"
 
@@ -58,10 +67,8 @@ class Student(Base):
     email_id = Column(String(100), unique=True, index=True, nullable=False)
     contact_number = Column(String(20))
     specialization = Column(String(100))
-
-    # Many to Many
-    courses = relationship("Course", secondary=course_student_link,back_populates="student")
-
+enrolled_ids = [c.course_id for c in student.courses]
+    is_enrolled = course_id in enrolled_ids
 class Instructor(Base):
     __tablename__ = "instructor"
 

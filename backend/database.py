@@ -1,11 +1,22 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-SQLALCHEMY_DATABASE_URI = "postgresql://neondb_owner:npg_LVh1MtnwyRq3@ep-plain-lab-ai0lqsi8-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+load_dotenv()
 
-engine = create_engine(SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False})
+# Removed check_same_thread for Postgres
+engine = create_engine(os.getenv("SQLALCHEMY_DATABASE_URI"))
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-sessionlocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)   
+# Dependency to get DB session in routes
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

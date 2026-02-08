@@ -209,3 +209,24 @@ class Assignment(AssignmentBase):
     assignment_id: int
     class Config:
         from_attributes = True
+
+
+""" Schema for User """
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+    
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: str
+    role: str
+
+class UserCreate(UserBase):
+    password: str
+    enrollment_key: Optional[str] = None # For Instructor/Analyst verification
+
+class User(UserBase):
+    id: int
+
+    class Config:
+        from_attributes = True # Allows Pydantic to read SQLAlchemy models
