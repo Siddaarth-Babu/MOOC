@@ -624,6 +624,68 @@ h3{color:var(--brand-1)}
   gap: 1rem;
 }
 
+/* ===== ADMIN STYLES ===== */
+.admin-navbar{
+  background: linear-gradient(135deg,var(--brand-1),var(--brand-2));
+  color:white; position:sticky;top:0;z-index:60;padding:0.8rem 0;box-shadow:0 6px 18px rgba(0,0,0,0.06)
+}
+.admin-nav-inner{max-width:1100px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;justify-content:space-between}
+.admin-nav-left{display:flex;align-items:center;gap:1.25rem}
+.admin-logo{font-weight:800;color:white;text-decoration:none;font-size:1.25rem}
+.admin-link{color:white;text-decoration:none;font-weight:600}
+.admin-nav-right{position:relative}
+.admin-profile-btn{background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.18);color:white;border-radius:50%;width:2.5rem;height:2.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.admin-profile-dropdown{position:absolute;top:110%;right:0;min-width:220px;background:#ffffff;border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,0.12);overflow:hidden;color:#111}
+.admin-profile-name{padding:0.75rem 1rem;background:#f9fafb;border-bottom:1px solid #eee;font-weight:700;color:#111}
+.admin-dropdown-item{display:block;width:100%;padding:0.75rem 1rem;border:none;background:none;text-align:left;cursor:pointer;color:#111}
+.admin-dropdown-item:hover{background:#f3f4f6;color:var(--brand-1)}
+.admin-logout{color:#991b1b}
+
+.admin-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-top:1rem}
+.admin-stat-card{background:white;border-radius:10px;padding:1.25rem;box-shadow:0 8px 18px rgba(0,0,0,0.06);text-align:center}
+.admin-stat-value{font-size:1.5rem;font-weight:800;color:var(--brand-1)}
+.admin-stat-label{color:#6b7280;margin-top:0.5rem;font-weight:600}
+
+.admin-quick-access{display:flex;gap:0.75rem}
+.qa-btn{background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:white;border:none;padding:0.6rem 1rem;border-radius:6px;cursor:pointer;font-weight:700}
+
+.admin-footer{background:#111;color:#ddd;padding:1.75rem 0;margin-top:2rem}
+.admin-footer-inner{max-width:1100px;margin:0 auto;padding:0 1rem;text-align:center}
+
+.manage-controls .control-select,.manage-controls .control-search{padding:0.6rem 0.9rem;border-radius:6px;border:1px solid #e6e9ef}
+
+.users-table table tr:hover{background:#fbfbfd}
+.btn-danger{background:#fee2e2;border:1px solid #fca5a5;color:#7f1d1d;padding:0.3rem 0.6rem;border-radius:6px;cursor:pointer}
+
+@media (max-width:768px){.admin-stats-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
+
+/* Manage Users layout */
+.admin-container{padding:2rem 1rem}
+.manage-header{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.manage-header-actions{display:flex;gap:0.75rem;align-items:center}
+.manage-controls{margin-top:1rem;display:flex;gap:1rem;align-items:center}
+.users-table-wrap{margin-top:1.25rem}
+.users-table{background:white;border-radius:8px;padding:1rem;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+.users-table table{width:100%;border-collapse:collapse}
+.users-table thead tr{color:#374151;text-align:left}
+.users-table th{padding:0.75rem 0.5rem}
+.users-table td{padding:0.9rem 0.5rem;border-top:1px solid #eef2f7}
+.users-row{cursor:pointer}
+.users-row:hover{background:#fbfbfd}
+.role-cell{text-transform:capitalize}
+
+.add-user-form{margin-top:1rem;background:white;padding:1rem;border-radius:8px}
+.add-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.add-user-actions{margin-top:0.75rem;display:flex;gap:0.5rem}
+
+.admin-welcome-title{font-size:1.75rem;margin-bottom:0.25rem}
+.admin-quick-wrap{margin-top:1.75rem}
+.admin-quick-title{margin-bottom:0.75rem}
+
+.muted{color:#6b7280}
+
+@media (max-width:640px){.add-user-grid{grid-template-columns:1fr}}
+
 .student-course-item {
   background: white;
   padding: 1rem;

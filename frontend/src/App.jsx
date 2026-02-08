@@ -6,6 +6,8 @@ import Signup from './pages/Auth/Signup.jsx'
 import StudentHome from './pages/student/Home.jsx'
 import InstructorDashboard from './pages/instructor/Dashboard.jsx'
 import AdminDashboard from './pages/administrator/Dashboard.jsx'
+import ManageUsers from './pages/administrator/ManageUsers.jsx'
+import ManageCoursesAdmin from './pages/administrator/ManageCourses.jsx'
 import CourseDetails from './pages/student/CourseDetails.jsx'
 import CourseCard from './components/student/CourseCard.jsx'
 import MyEnrollments from './pages/student/MyEnrollments.jsx'
@@ -22,6 +24,8 @@ const App = () => {
         <Route path="/student" element={<StudentHome />} />
         <Route path="/instructor" element={<InstructorDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/manage-users" element={<ManageUsers />} />
+        <Route path="/admin/manage-courses" element={<ManageCoursesAdmin />} />
         <Route path="/courses" element={<CourseCard />} />
         <Route path="/student/enrollments/:id" element={<CourseDetails />} />
         <Route path="/student/enrollments" element={<MyEnrollments />} />
