@@ -1,7 +1,7 @@
 from __future__ import annotations # fixes the circular dependency
 from pydantic import BaseModel, EmailStr, Field
 from datetime import date
-import datetime
+from datetime import datetime
 from typing import Optional
 # Pydantic is a data validatio library
 # Inheriting base model

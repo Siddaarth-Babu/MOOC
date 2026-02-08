@@ -1,15 +1,15 @@
 import os
-from fastapi import FASTAPI,HTTPException,Depends, status
+from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
-import schemas,models
+from backend import schemas,models,crud
+# import schemas,models
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from backend.database import get_db
 from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
 from dotenv import load_dotenv
-import crud
-from security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
+from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 
 # Load the variables from .env into the system
 load_dotenv()
@@ -32,7 +32,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str):
     return pwd_context.hash(password)
 
-app = FASTAPI()
+app = FastAPI()
 
 
 @app.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -424,5 +424,4 @@ def get_advanced_stats(
             "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
         }
     }
-
 

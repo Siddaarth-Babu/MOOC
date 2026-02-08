@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-import models,schemas
-import datetime
+from backend import models,schemas
+from datetime import datetime
 
 """ Course Crud Operations """
 

@@ -1,7 +1,7 @@
-from database import Base
+from backend.database import Base
 from sqlalchemy import Column, Integer, String, Date, ForeignKey,DateTime, CheckConstraint, Table
 from sqlalchemy.orm import relationship
-import datetime
+from datetime import datetime
 course_topic_link = Table(
     "course_topic_link",
     Base.metadata,
