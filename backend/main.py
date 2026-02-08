@@ -10,7 +10,26 @@ from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
+from fastapi.middleware.cors import CORSMiddleware
+from backend.database import Base, engine
 
+app = FastAPI()
+
+# Create all database tables on startup
+Base.metadata.create_all(bind=engine)
+
+origins = [
+    "http://localhost:5173"
+]
+# 2. Add the middleware
+print("CORS Middleware Configured with Origins:")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allows GET, POST, DELETE, etc.
+    allow_headers=["*"],
+)
 # Load the variables from .env into the system
 load_dotenv()
 
@@ -27,12 +46,17 @@ ROLE_KEYS = {
 }
 
 # Define the hashing algorithm
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 def get_password_hash(password: str):
     return pwd_context.hash(password)
 
-app = FastAPI()
+
+@app.get("/")
+def root():
+    print("🚀 Server running on http://127.0.0.1:8000/")
+    print("DB URL:", os.getenv("SQLALCHEMY_DATABASE_URI"))
+    return {"message": "MOOC Backend is running"}
 
 
 @app.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -51,6 +75,8 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
                 detail=f"Incorrect enrollment key for the {user_data.role} role."
             )
     # 3. Hash the password and save the user
+    if len(user_data.password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Password too long")
     hashed_password = pwd_context.hash(user_data.password)
     
     new_user = models.User(

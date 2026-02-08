@@ -1,13 +1,24 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker # type: ignore
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Removed check_same_thread for Postgres
-engine = create_engine(os.getenv("SQLALCHEMY_DATABASE_URI"))
+# Read DB URL from env, normalize quotes, fall back to a local sqlite file for development
+db_url = os.getenv("SQLALCHEMY_DATABASE_URI")
+if db_url:
+    db_url = db_url.strip().strip('"').strip("'")
+
+if not db_url:
+    db_url = "sqlite:///./dev.db"
+
+# For SQLite we need check_same_thread option
+if db_url.startswith("sqlite"):
+    engine = create_engine(db_url, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(db_url)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

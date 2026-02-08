@@ -26,11 +26,6 @@ const Signup = () => {
     setError('')
     setSuccess(false)
 
-    // if (!termsAccepted) {
-    //   setError('Please accept the terms and conditions')
-    //   return
-    // }
-
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
       return
@@ -43,29 +38,30 @@ const Signup = () => {
 
     setLoading(true)
     try {
-      // TODO: Connect to actual API endpoint
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     first_name: formData.firstName,
-      //     last_name: formData.lastName,
-      //     email: formData.email,
-      //     password: formData.password,
-      //     enrollment_key: formData.enrollmentKey || null,
-      //     role: formData.role
-      //   })
-      // })
-      // if (!response.ok) {
-      //   const data = await response.json()
-      //   throw new Error(data.detail || 'Registration failed')
-      // }
+      const payload = {
+        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        enrollment_key: formData.enrollmentKey || null
+      }
+
+      const response = await fetch('http://localhost:8000/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.detail || data.message || 'Registration failed')
+      }
+
       setSuccess(true)
-      console.log('Signup attempt:', { ...formData, termsAccepted })
-      // Redirect after 2s
+      // Redirect after brief delay
       setTimeout(() => {
-        // window.location.href = '/login'
-      }, 2000)
+        window.location.href = '/login'
+      }, 1000)
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.')
     } finally {
@@ -148,8 +144,8 @@ const Signup = () => {
               >
                 <option value="student">Student</option>
                 <option value="instructor">Instructor</option>
-                <option value="administrator">Administrator</option>
-                <option value="data_analyst">Data Analyst</option>
+                <option value="admin">Administrator</option>
+                <option value="analyst">Data Analyst</option>
               </select>
             </div>
 

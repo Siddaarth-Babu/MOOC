@@ -51,6 +51,8 @@ class Course(Base):
     videos = relationship("Video",back_populates="course")
     notes = relationship("Notes",back_populates="course")
     assignment = relationship("Assignment",back_populates="course")
+    university = relationship("University", back_populates="courses")
+    program = relationship("Program", back_populates="courses")
 
 class Student(Base):
     __tablename__ = "student"
@@ -80,6 +82,7 @@ class Video(Base):
     duration = Column(Integer,nullable=False)
     url_link = Column(String, nullable=False)
     course_id = Column(Integer, ForeignKey("course.course_id"))
+    course = relationship("Course", back_populates="videos")
 
 class Notes(Base):
     __tablename__ = "notes"
@@ -89,6 +92,7 @@ class Notes(Base):
     url_link = Column(String, nullable=False)
     document_type = Column(String(20))
     course_id = Column(Integer, ForeignKey("course.course_id"))
+    course = relationship("Course", back_populates="notes")
 
 class Textbook(Base):
     __tablename__ = "textbook"
@@ -134,7 +138,7 @@ class Program(Base):
     program_type = Column(String(50)) 
 
     # One to Many
-    courses = relationship("Course",back_populates="university")
+    courses = relationship("Course",back_populates="program")
 
 class DataAnalyst(Base):
     __tablename__ = "data_analyst"
@@ -165,6 +169,7 @@ class Assignment(Base):
     marks = Column(Integer)
     due_date = Column(Date)
     course_id = Column(Integer, ForeignKey("course.course_id"))
+    course = relationship("Course", back_populates="assignment")
 
 class StudentSubmission(Base):
     __tablename__ = "student_submission"
