@@ -331,69 +331,7 @@ const MyTeaching = () => {
           general: [{ id: 1, title: 'Course Completion Info', icon: '📢' }],
           materials: [
             { id: 1, title: 'System Programming Videos', icon: '🎥' },
-            { id: 2, title: 'C Programming Notes', icon: '📝' },
-            { id: 3, title: 'Advanced Topics', icon: '📚' }
-          ],
-          assignments: [
-            { id: 1, title: 'System Calls Lab', icon: '✏️' },
-            { id: 2, title: 'Concurrency Project', icon: '✏️' }
-          ],
-          assessments: [
-            { id: 1, title: 'Quiz', icon: '📊' },
-            { id: 2, title: 'Final Exam', icon: '🎓' }
-          ]
-        },
-        details: [
-          { label: 'Course ID', value: 'CS501' },
-          { label: 'Instructor', value: 'Dr. David Lee' },
-          { label: 'Duration', value: '12 weeks' },
-          { label: 'Skill Level', value: 'Advanced' },
-          { label: 'Course Fee', value: '$650' },
-          { label: 'Credits', value: '4' },
-          { label: 'Description', value: 'Advanced systems programming covering low-level programming, system calls, concurrency, and performance optimization.', fullWidth: true }
-        ],
-        grades: {
-          items: [
-            { id: 1, name: 'System Calls Lab', score: 94, maxScore: 100, status: 'Submitted' },
-            { id: 2, name: 'Concurrency Project', score: 96, maxScore: 150, status: 'Submitted' },
-            { id: 3, name: 'Quiz', score: 91, maxScore: 100, status: 'Completed' },
-            { id: 4, name: 'Final Exam', score: 93, maxScore: 200, status: 'Completed' }
-          ],
-          overall: 93.5
-        }
-      }
-    },
-    {
-      id: 'CS102',
-      name: 'Data Structures and Algorithms',
-      duration: '16 weeks',
-      skillLevel: 'Beginner',
-      fee: '$400',
-      semester: 'Fall Semester (2024-25)',
-      status: 'completed',
-      courseDetails: {
-        course: {
-          id: 'CS102',
-          name: 'Data Structures and Algorithms',
-          semester: 'Fall Semester (2024-25)',
-          credits: 4,
-          instructor: 'Dr. Emily White',
-          duration: '16 weeks',
-          skillLevel: 'Beginner',
-          fee: '$400',
-          description: 'Fundamentals of data structures and algorithms covering arrays, lists, trees, sorting, and searching.'
-        },
-        sections: {
-          general: [{ id: 1, title: 'Course Archive', icon: '📢' }],
-          materials: [
-            { id: 1, title: 'Algorithm Videos', icon: '🎥' },
-            { id: 2, title: 'DSA Notes', icon: '📝' },
-            { id: 3, title: 'Classic Textbooks', icon: '📚' }
-          ],
-          assignments: [
-            { id: 1, title: 'Array Operations', icon: '✏️' },
-            { id: 2, title: 'Tree Implementation', icon: '✏️' },
-            { id: 3, title: 'Sorting Algorithms', icon: '✏️' }
+            { id: 2, title: 'C Programming Notes', icon: '📝' }
           ],
           assessments: [
             { id: 1, title: 'Quiz 1', icon: '📊' },
@@ -482,6 +420,106 @@ const MyTeaching = () => {
           overall: 89.33
         }
       }
+    },
+    {
+      id: 'CS105',
+      name: 'Distributed Hash Tables',
+      duration: '14 weeks',
+      skillLevel: 'Advanced',
+      fee: '$650',
+      semester: 'Spring Semester (2025-26)',
+      status: 'active',
+      courseDetails: {
+        course: {
+          id: 'CS105',
+          name: 'Distributed Hash Tables',
+          semester: 'Spring Semester (2025-26)',
+          credits: 4,
+          instructor: 'Dr. Vikram Singh',
+          duration: '14 weeks',
+          skillLevel: 'Advanced',
+          fee: '$650',
+          description: 'Advanced course on distributed hash tables, peer-to-peer networks, consistency models, and scalability patterns.'
+        },
+        sections: {
+          general: [{ id: 1, title: 'Course Announcements', icon: '📢' }],
+          materials: [
+            { id: 1, title: 'DHT Architecture Videos', icon: '🎥' },
+            { id: 2, title: 'Distributed Systems Notes', icon: '📝' },
+            { id: 3, title: 'P2P Technology Papers', icon: '📚' }
+          ],
+          assignments: [
+            { id: 1, title: 'DHT Implementation Project', icon: '✏️' },
+            { id: 2, title: 'Consistency Protocol Design', icon: '✏️' },
+            { id: 3, title: 'Performance Analysis Report', icon: '✏️' }
+          ],
+          assessments: [
+            { id: 1, title: 'Quiz 1: P2P Concepts', icon: '📊' },
+            { id: 2, title: 'Midterm Exam', icon: '📊' },
+            { id: 3, title: 'Final Project Presentation', icon: '🎓' }
+          ]
+        },
+        details: [
+          { label: 'Course ID', value: 'CS105' },
+          { label: 'Instructor', value: 'Dr. Vikram Singh' },
+          { label: 'Duration', value: '14 weeks' },
+          { label: 'Skill Level', value: 'Advanced' },
+          { label: 'Course Fee', value: '$650' },
+          { label: 'Credits', value: '4' },
+          { label: 'Description', value: 'Advanced course on distributed hash tables, peer-to-peer networks, consistency models, and scalability patterns.', fullWidth: true }
+        ],
+        grades: {
+          items: [
+            { id: 101, name: 'DHT Implementation Project', score: 0, maxScore: 150, status: 'Not Graded' },
+            { id: 102, name: 'Consistency Protocol Design', score: 0, maxScore: 100, status: 'Not Graded' },
+            { id: 103, name: 'Performance Analysis Report', score: 0, maxScore: 100, status: 'Not Graded' },
+            { id: 104, name: 'Quiz 1: P2P Concepts', score: 0, maxScore: 100, status: 'Not Graded' },
+            { id: 105, name: 'Midterm Exam', score: 0, maxScore: 150, status: 'Not Graded' },
+            { id: 106, name: 'Final Project Presentation', score: 0, maxScore: 200, status: 'Not Graded' }
+          ],
+          overall: 0
+        }
+      },
+      studentsEnrolled: [
+        {
+          id: 'STU001',
+          studentId: 'STU001',
+          name: 'Aisha Patel',
+          email: 'aisha.patel@university.edu',
+          enrollmentDate: '2025-01-15',
+          progress: 65,
+          courseGrades: {
+            items: [
+              { id: 101, name: 'DHT Implementation Project', score: 135, maxScore: 150, status: 'Submitted' },
+              { id: 102, name: 'Consistency Protocol Design', score: 92, maxScore: 100, status: 'Submitted' },
+              { id: 103, name: 'Performance Analysis Report', score: 88, maxScore: 100, status: 'In Progress' },
+              { id: 104, name: 'Quiz 1: P2P Concepts', score: 87, maxScore: 100, status: 'Completed' },
+              { id: 105, name: 'Midterm Exam', score: 128, maxScore: 150, status: 'Completed' },
+              { id: 106, name: 'Final Project Presentation', score: null, maxScore: 200, status: 'Not Started' }
+            ],
+            overall: 106.33
+          }
+        },
+        {
+          id: 'STU002',
+          studentId: 'STU002',
+          name: 'Marcus Chen',
+          email: 'marcus.chen@university.edu',
+          enrollmentDate: '2025-01-15',
+          progress: 58,
+          courseGrades: {
+            items: [
+              { id: 101, name: 'DHT Implementation Project', score: 142, maxScore: 150, status: 'Submitted' },
+              { id: 102, name: 'Consistency Protocol Design', score: 95, maxScore: 100, status: 'Submitted' },
+              { id: 103, name: 'Performance Analysis Report', score: null, maxScore: 100, status: 'Pending' },
+              { id: 104, name: 'Quiz 1: P2P Concepts', score: 91, maxScore: 100, status: 'Completed' },
+              { id: 105, name: 'Midterm Exam', score: 135, maxScore: 150, status: 'Completed' },
+              { id: 106, name: 'Final Project Presentation', score: null, maxScore: 200, status: 'Not Started' }
+            ],
+            overall: 112.67
+          }
+        }
+      ]
     }
   ])
 
@@ -506,9 +544,10 @@ const MyTeaching = () => {
     // Sort
     if (sortBy === 'name') {
       filtered.sort((a, b) => a.name.localeCompare(b.name))
-    } else if (sortBy === 'semester') {
-      filtered.sort((a, b) => b.semester.localeCompare(a.semester))
     }
+    //  else if (sortBy === 'semester') {
+    //   filtered.sort((a, b) => b.semester.localeCompare(a.semester))
+    // }
 
     return filtered
   }, [enrolledCourses, filterStatus, searchQuery, sortBy])
@@ -546,7 +585,7 @@ const MyTeaching = () => {
             />
           </div>
 
-          <div className="instructor-control-group">
+          {/* <div className="instructor-control-group">
             <select
               className="instructor-control-select"
               value={sortBy}
@@ -555,7 +594,7 @@ const MyTeaching = () => {
               <option value="name">Sort by course name</option>
               <option value="semester">Sort by semester</option>
             </select>
-          </div>
+          </div> */}
         </div>
 
         {/* Courses Grid */}
@@ -569,7 +608,11 @@ const MyTeaching = () => {
                 duration={course.duration}
                 skillLevel={course.skillLevel}
                 fee={course.fee}
-                courseData={course.courseDetails}
+                // pass full shaped courseData for CoursePage (include students)
+                courseData={{
+                  ...(course.courseDetails || {}),
+                  studentsEnrolled: (course.studentsEnrolled || []).map(s => ({ ...s, courseGrades: (course.courseDetails && course.courseDetails.grades) || { items: [] } }))
+                }}
               />
             ))
           ) : (
