@@ -190,7 +190,7 @@ def admin_university_view(
 #     newcourse = crud.create_course(db, course_data)
 #     return {
 #         "message": f"Course '{newcourse.course_name}' created successfully under {university.institute_name}"
-    #}
+#     }
 #################################################################################################################
 @app.post("admin/instructor/new_instructor")
 def admin_create_instructor(

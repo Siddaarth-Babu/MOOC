@@ -6,7 +6,14 @@ const Statistics = () => {
   useEffect(() => {
     let mounted = true
     // try to fetch real stats; fall back to hardcoded values if endpoint missing
-    fetch('/api/admin/stats', { credentials: 'include' })
+    fetch('http://127.0.0.1:8000/admin', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    })
       .then((res) => {
         if (!res.ok) throw new Error('no stats')
         return res.json()
@@ -15,7 +22,7 @@ const Statistics = () => {
         if (!mounted) return
         setStats({
           courses: data.courses ?? 0,
-          students: data.students ?? 0,
+          students: data.no_of_students ?? 0,
           instructors: data.instructors ?? 0,
           admins: data.admins ?? 0,
           analysts: data.analysts ?? 0,
