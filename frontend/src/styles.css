@@ -1563,3 +1563,67 @@ h3{color:var(--brand-1)}
   .instructor-modal-body { padding:1rem }
 }
 
+/* ===== ADMIN MANAGE USERS PAGE ===== */
+/* src/styles.css - minimal styles for ManageUsers UI */
+.admin-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container.admin-container {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+.manage-header {
+  margin-bottom: 12px;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.error {
+  color: #a00;
+  margin-top: 6px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: #ffecec;
+  border-color: #f5a4a4;
+  color: #a00;
+  padding: 6px 8px;
+  border-radius: 5px;
+}
+
+.auth-submit-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #111827;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.users-table-wrap { margin-top: 12px; }
+.users-table table { width: 100%; border-collapse: collapse; }
+.users-table th, .users-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eee; }
+.users-row { cursor: pointer; }
+.role-cell { text-transform: capitalize; color: #374151; }
+
+.add-user-form { margin-top: 12px; }
+.add-user-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.form-input, .form-select { padding: 8px; border-radius: 6px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; }
+.control-select, .control-search { padding: 8px; border-radius: 6px; border: 1px solid #ddd; }
+
+.manage-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
