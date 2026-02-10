@@ -21,7 +21,7 @@ class CourseCreate(CourseBase):
 
 class Course(CourseBase):
     course_id: int
-
+    # course_description
     institute_id: int
     program_id: int
     textbook: Optional[Textbook] = None
@@ -71,6 +71,10 @@ class InstructorBase(BaseModel):
     name: str
     email_id: EmailStr
     department: str
+
+class InstructorUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
 
 class InstructorCreate(InstructorBase):
     dob: date
@@ -185,6 +189,10 @@ class SystemAdminBase(BaseModel):
     name: str
     email_id: EmailStr
 
+class AdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+
 class SystemAdminCreate(SystemAdminBase):
     password : str = Field(...,min_length=8)
 
@@ -202,6 +210,10 @@ class DataAnalystBase(BaseModel):
 class DataAnalystCreate(DataAnalystBase):
     password : str = Field(...,min_length=8)
 
+class AnalystUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+
 class DataAnalyst(DataAnalystBase):
     analyst_id: int
 
@@ -213,7 +225,6 @@ class AssignmentBase(BaseModel):
     title: str
     description: str
     assignment_url_link: str
-    submission_url_link: str
     due_date: date
     marks: int
 
@@ -277,6 +288,33 @@ class StudentSubmission(SubmissionBase):
 
     class Config:
         from_attributes = True
+
+""" Schema for Folder Item """
+class FolderItemSchema(BaseModel):
+    item_id: int
+    item_type: str
+    video_id: Optional[int] = None
+    notes_id: Optional[int] = None
+    assignment_id: Optional[int] = None
+    class Config: from_attributes = True
+
+""" Schema for Folder  """
+class FolderSchema(BaseModel):
+    folder_id: int
+    title: str
+    parent_id: Optional[int] = None
+    items: List[FolderItemSchema] = []
+    subfolders: List["FolderSchema"] = [] # Recursive call
+    class Config: from_attributes = True
+
+FolderSchema.model_rebuild() # Necessary for recursive models in Pydantic V2
+
+
+class FolderCreate(BaseModel):
+    title: str
+
+class ItemLinkCreate(BaseModel):
+    reference_id: int # This will be the video_id, notes_id, etc.
 
 
 class CourseCreateWithInstructors(BaseModel):

@@ -1,27 +1,93 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
 
 const CoursePage = ({ courseData }) => {
   const navigate = useNavigate()
+  const { id: courseId } = useParams()
   const [activeTab, setActiveTab] = useState('content')
-  const [expandedSections, setExpandedSections] = useState({
-    general: true,
-    materials: false,
-    assignments: false,
-    assessments: false,
-  })
+  const [expandedFolders, setExpandedFolders] = useState({})
 
   if (!courseData) {
     return <div className="course-details"><p>Loading...</p></div>
   }
 
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
+  const toggleFolder = (folderId) => {
+    setExpandedFolders((prev) => ({
       ...prev,
-      [section]: !prev[section],
+      [folderId]: !prev[folderId],
     }))
+  }
+
+  // Helper function to get icon based on item type
+  const getItemIcon = (itemType) => {
+    switch (itemType) {
+      case 'video':
+        return '🎥'
+      case 'notes':
+        return '📄'
+      case 'assignment':
+        return '📝'
+      case 'textbook':
+        return '📚'
+      default:
+        return '📌'
+    }
+  }
+
+  // Recursive component to render nested folders
+  const FolderTree = ({ folders = [], courseId }) => {
+    return (
+      <>
+        {folders.map((folder) => (
+          <div key={folder.folder_id} className="content-section">
+            <button
+              className="section-header"
+              onClick={() => toggleFolder(folder.folder_id)}
+            >
+              <span className={`section-arrow ${expandedFolders[folder.folder_id] ? 'open' : ''}`}>
+                ▼
+              </span>
+              <span className="section-title">{folder.title}</span>
+            </button>
+
+            {expandedFolders[folder.folder_id] && (
+              <div className="section-content">
+                {/* Render folder items (videos, notes, etc.) */}
+                {folder.items && folder.items.length > 0 && (
+                  <>
+                    {folder.items.map((item) => (
+                      <div
+                        key={`item-${item.item_id}`}
+                        className="content-item"
+                        onClick={() =>
+                          navigate(
+                            `/student/content/${item.item_type}/${item.item_id}`,
+                            { state: { courseId, folderId: folder.folder_id } }
+                          )
+                        }
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <span className="item-icon">{getItemIcon(item.item_type)}</span>
+                        <span className="item-title">{item.item_type}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Render subfolders recursively */}
+                {folder.subfolders && folder.subfolders.length > 0 && (
+                  <div className="subfolder-group">
+                    <FolderTree folders={folder.subfolders} courseId={courseId} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </>
+    )
   }
 
   return (
@@ -30,12 +96,9 @@ const CoursePage = ({ courseData }) => {
       <div className="course-details">
         {/* Course Header */}
         <div className="course-header">
-          {/* <div className="course-header-banner"></div> */}
           <div className="course-header-content">
             <h1 className="course-details-title">{courseData.course.name}</h1>
-            <p className="course-meta-info">
-              {courseData.course.id}
-            </p>
+            <p className="course-meta-info">Course ID: {courseData.course.id}</p>
           </div>
         </div>
 
@@ -65,109 +128,35 @@ const CoursePage = ({ courseData }) => {
         <div className="course-tabs-content">
           {activeTab === 'content' && (
             <div className="tab-panel">
-              {/* General Section */}
-              <div className="content-section">
-                <button
-                  className="section-header"
-                  onClick={() => toggleSection('general')}
-                >
-                  <span className={`section-arrow ${expandedSections.general ? 'open' : ''}`}>
-                    ▼
-                  </span>
-                  <span className="section-title">General</span>
-                </button>
-                {expandedSections.general && (
-                  <div className="section-content">
-                    {courseData.sections.general && courseData.sections.general.map((item) => (
-                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/general/${item.id}`)} style={{cursor: 'pointer'}}>
-                        <span className="item-icon">{item.icon}</span>
-                        <span className="item-title">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Materials Section */}
-              <div className="content-section">
-                <button
-                  className="section-header"
-                  onClick={() => toggleSection('materials')}
-                >
-                  <span className={`section-arrow ${expandedSections.materials ? 'open' : ''}`}>
-                    ▼
-                  </span>
-                  <span className="section-title">Materials</span>
-                </button>
-                {expandedSections.materials && (
-                  <div className="section-content">
-                    {courseData.sections.materials && courseData.sections.materials.map((item) => (
-                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/materials/${item.id}`)} style={{cursor: 'pointer'}}>
-                        <span className="item-icon">{item.icon}</span>
-                        <span className="item-title">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Assignments Section */}
-              <div className="content-section">
-                <button
-                  className="section-header"
-                  onClick={() => toggleSection('assignments')}
-                >
-                  <span className={`section-arrow ${expandedSections.assignments ? 'open' : ''}`}>
-                    ▼
-                  </span>
-                  <span className="section-title">Assignments</span>
-                </button>
-                {expandedSections.assignments && (
-                  <div className="section-content">
-                    {courseData.sections.assignments && courseData.sections.assignments.map((item) => (
-                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/assignments/${item.id}`)} style={{cursor: 'pointer'}}>
-                        <span className="item-icon">{item.icon}</span>
-                        <span className="item-title">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Assessments Section */}
-              <div className="content-section">
-                <button
-                  className="section-header"
-                  onClick={() => toggleSection('assessments')}
-                >
-                  <span className={`section-arrow ${expandedSections.assessments ? 'open' : ''}`}>
-                    ▼
-                  </span>
-                  <span className="section-title">Assessments</span>
-                </button>
-                {expandedSections.assessments && (
-                  <div className="section-content">
-                    {courseData.sections.assessments && courseData.sections.assessments.map((item) => (
-                      <div key={item.id} className="content-item" onClick={() => navigate(`/student/content/assessments/${item.id}`)} style={{cursor: 'pointer'}}>
-                        <span className="item-icon">{item.icon}</span>
-                        <span className="item-title">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {courseData.folders && courseData.folders.length > 0 ? (
+                <FolderTree folders={courseData.folders} courseId={courseId} />
+              ) : (
+                <div className="empty-state">
+                  <p>No course content available yet</p>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'details' && (
             <div className="tab-panel">
               <div className="details-content">
-                {courseData.details && courseData.details.map((field, idx) => (
-                  <div key={idx} className="detail-field" style={field.fullWidth ? { gridColumn: '1 / -1' } : {}}>
-                    <label>{field.label}</label>
-                    <p>{field.value}</p>
+                {courseData.details && courseData.details.length > 0 ? (
+                  courseData.details.map((field, idx) => (
+                    <div
+                      key={idx}
+                      className="detail-field"
+                      style={field.fullWidth ? { gridColumn: '1 / -1' } : {}}
+                    >
+                      <label>{field.label}</label>
+                      <p>{field.value}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <p>No course details available</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -185,20 +174,30 @@ const CoursePage = ({ courseData }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {courseData.grades.items && courseData.grades.items.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.name}</td>
-                        <td>{item.score !== null ? item.score : '-'}</td>
-                        <td>{item.maxScore}</td>
-                        <td>{item.status}</td>
+                    {courseData.grades.items && courseData.grades.items.length > 0 ? (
+                      courseData.grades.items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.name}</td>
+                          <td>{item.score !== null ? item.score : '-'}</td>
+                          <td>{item.maxScore}</td>
+                          <td>{item.status}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center' }}>
+                          No grades available yet
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
                 <div className="overall-grade">
                   <h3>Overall Grade</h3>
                   <p className="grade-value">
-                    {courseData.grades.overall !== null ? `${courseData.grades.overall}%` : 'Not calculated yet'}
+                    {courseData.grades.overall !== null
+                      ? `${courseData.grades.overall}%`
+                      : 'Not calculated yet'}
                   </p>
                 </div>
               </div>

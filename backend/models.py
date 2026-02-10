@@ -1,6 +1,6 @@
 from backend.database import Base
 from sqlalchemy import Column, Integer, String, Date, ForeignKey,DateTime, CheckConstraint, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship,backref
 from datetime import datetime
 course_topic_link = Table(
     "course_topic_link",
@@ -41,7 +41,7 @@ class Course(Base):
     duration = Column(Integer)
     skill_level = Column(String(50))
     course_fees = Column(Integer)
-
+    folders = relationship("Folder", back_populates="course", cascade="all, delete-orphan")
     # One-to-Many Links
     program_id = Column(Integer, ForeignKey("program.program_id"))
     institute_id = Column(Integer, ForeignKey("university.institute_id"))
@@ -182,3 +182,31 @@ class StudentSubmission(Base):
     submitted_at = Column(DateTime, default=datetime.utcnow)
     obtained_marks = Column(Integer)  # Marks specifically for this student's work
     status = Column(String(20))       # e.g., "Graded", "Pending", "Late"
+
+
+class Folder(Base):
+    __tablename__ = "folders"
+    folder_id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100), nullable=False)
+    course_id = Column(Integer, ForeignKey("course.course_id"))
+    parent_id = Column(Integer, ForeignKey("folders.folder_id"), nullable=True) # For sub-folders
+
+    # Relationships
+    course = relationship("Course", back_populates="folders")
+    # This allows a folder to have many items (Videos/Notes/etc)
+    items = relationship("FolderItem", back_populates="folder", cascade="all, delete-orphan")
+    # This allows nested folders (Self-referencing)
+    subfolders = relationship("Folder", backref=backref('parent', remote_side=[folder_id]))
+
+class FolderItem(Base):
+    __tablename__ = "folder_items"
+    item_id = Column(Integer, primary_key=True, index=True)
+    folder_id = Column(Integer, ForeignKey("folders.folder_id"))
+    item_type = Column(String(20)) # e.g., 'video', 'assignment', 'notes'
+
+    # Foreign Keys to your existing specialized tables
+    video_id = Column(Integer, ForeignKey("video.video_id"), nullable=True)
+    notes_id = Column(Integer, ForeignKey("notes.notes_id"), nullable=True)
+    assignment_id = Column(Integer, ForeignKey("assignment.assignment_id"), nullable=True)
+
+    folder = relationship("Folder", back_populates="items")

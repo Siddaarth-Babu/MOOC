@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from backend import models,schemas
 from datetime import datetime
+from typing import Optional
 
 """ Course Crud Operations """
 
@@ -87,6 +88,28 @@ def get_course_topics(db:Session, course_id:int):
     ).filter(
         models.course_topic_link.c.course_id == course_id
     ).all()
+
+
+""" Crud for Folder operations """
+
+def create_folder(db: Session, title: str, course_id: int, parent_id: Optional[int] = None):
+    db_folder = models.Folder(title=title, course_id=course_id, parent_id=parent_id)
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder
+
+def add_item_to_folder(db: Session, folder_id: int, item_type: str, reference_id: int):
+    # Map the reference_id to the correct column
+    new_item = models.FolderItem(folder_id=folder_id, item_type=item_type)
+    if item_type == "video": new_item.video_id = reference_id
+    elif item_type == "notes": new_item.notes_id = reference_id
+    elif item_type == "assignment": new_item.assignment_id = reference_id
+    
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return new_item
 
 """ Instructor Crud operations """
 
@@ -175,12 +198,12 @@ def add_textbook(db: Session, textb:schemas.TextbookCreate, c_id: int):
     db.refresh(db_topic)
     return db_topic
 
-def add_notes(db: Session, notes: schemas.NotesCreate):
+def add_notes(db: Session, notes: schemas.NotesCreate,c_id):
     db_notes = models.Notes(
         title = notes.title,
         url_link = notes.url_link,
         document_type = notes.document_type,
-        course_id = notes.course_id
+        course_id = c_id
     )
     db.add(db_notes)
     db.commit()

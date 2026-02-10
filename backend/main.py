@@ -7,13 +7,14 @@ from passlib.context import CryptContext
 from backend import schemas,models,crud
 # import schemas,models
 from sqlalchemy.orm import Session
-from sqlalchemy import func, insert
+from sqlalchemy import func,insert
 from backend.database import get_db
 from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
 from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
+from typing import List
 
 app = FastAPI()
 
@@ -230,13 +231,68 @@ def student_home(
     }
 
 
-@app.get("/student/courses/{course_id}")
-def get_student_course_view(
+@app.get("/student/{course_id}", response_model=List[schemas.FolderSchema])
+def get_student_enrollment_course_structure(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Returns the nested tree of folders and subfolders for a course in student enrollments.
+    React uses this to render the 'Chapter' list and 'Topics' for enrolled courses.
+    """
+    # Verify student is enrolled in this course
+    enrolled_courses = crud.get_student_courses(db, student.student_id)
+    course_ids = [c.course_id for c in enrolled_courses]
+    
+    if course_id not in course_ids:
+        raise HTTPException(status_code=403, detail="Not enrolled in this course")
+    
+    # Fetch top-level folders for this course
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    if not folders:
+        return []
+    return folders
+
+
+@app.get("/student/enrollments/{course_id}", response_model=List[schemas.FolderSchema])
+def get_student_enrollment_course_view(
     course_id: int, 
     db: Session = Depends(get_db),
     student: models.Student = Depends(get_curr_student)
 ):
-    course = crud.get_course_by_id(db, course_id)
+    """
+    Returns the nested tree of folders and subfolders for an enrolled course.
+    """
+    # Verify student is enrolled in this course
+    enrolled_courses = crud.get_student_courses(db, student.student_id)
+    course_ids = [c.course_id for c in enrolled_courses]
+    
+    if course_id not in course_ids:
+        raise HTTPException(status_code=403, detail="Not enrolled in this course")
+    
+    # Fetch top-level folders for this course
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    if not folders:
+        return []
+    return folders
+
+@app.post("/student/courses/{course_id}/enroll")
+def enroll_student(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    # 1. Check if the course even exists
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
@@ -742,6 +798,9 @@ def get_advanced_stats(
             "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
         }
     }
+
+
+""" System Admin Routing """
 
 @app.get("/admin/courses")
 def admin_courses(
@@ -1819,6 +1878,139 @@ def remove_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to remove course")
+
+
+""" Routing for Folder creation """
+
+@app.post("/courses/{course_id}/add_folder")
+def add_top_level_folder(
+    course_id: int, 
+    folder_data: schemas.FolderCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """Creates a main folder (Chapter) directly under a course."""
+    return crud.create_folder(db, title=folder_data.title, course_id=course_id)
+
+
+@app.post("/courses/{course_id}/{folder_id}/add_sub")
+def add_subfolder(
+    course_id: int,
+    folder_id: int,
+    folder_data: schemas.FolderCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """Creates a subfolder inside an existing folder."""
+    return crud.create_folder(db, title=folder_data.title, course_id=course_id, parent_id=folder_id)
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_video")
+def add_video(
+    course_id: int, 
+    folder_id: int, 
+    subfold_id: int,
+    video_data: schemas.VideoCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    # Security Check: Ensure the subfolder actually belongs to the parent/course
+    target_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+    
+    if not target_folder:
+        raise HTTPException(status_code=404, detail="Target folder path not found in this course")
+
+    # 1. Create the Video
+    new_video = crud.add_videos(db, video_data,course_id)
+    
+    # 2. Link it to the subfolder
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="video", reference_id=new_video.video_id)
+    
+    return {"message": "Video created and nested", "video": new_video}
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_notes")
+def add_notes(
+    course_id: int, folder_id: int, subfold_id: int,
+    notes_data: schemas.NotesCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    # Path validation
+    target_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+
+    if not target_folder: raise HTTPException(status_code=404)
+
+    # 1. Create Notes
+    new_notes = crud.add_notes(db, notes_data,course_id)
+    
+    # 2. Link
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="notes", reference_id=new_notes.notes_id)
+    
+    return {"message": "Notes added", "notes": new_notes}
+
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_book")
+def add_book(
+    course_id: int, folder_id: int, subfold_id: int,
+    book_data: schemas.TextbookCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    # 1. Create the Textbook record (linked to course)
+    new_book = crud.add_textbook(db, book_data,course_id)
+    
+    # 2. Link the book to the specific folder
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="textbook", reference_id=new_book.textbook_id)
+    
+    return {"message": "Book added to folder", "book": new_book}
+
+
+
+@app.get("/courses/{course_id}", response_model=List[schemas.FolderSchema])
+def get_course_structure(
+    course_id: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the nested tree of folders and subfolders for a course.
+    React uses this to render the 'Chapter' list and 'Topics'.
+    """
+    # We only fetch top-level folders (parent_id is None) 
+    # The recursive schema handles fetching their subfolders automatically.
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    if not folders:
+        return []
+    return folders
+
+@app.get("/courses/{course_id}/{folder_id}/{subfold_id}", response_model=schemas.FolderSchema)
+def get_folder_contents(
+    course_id: int,
+    folder_id: int,
+    subfold_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the items (Videos, Notes, Assignments) inside a specific subfolder.
+    """
+    # Fetch the specific subfolder
+    folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    return folder
     
 @app.get("/admin/users")
 def admin_users(
