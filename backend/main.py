@@ -140,15 +140,15 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
             new_analyst = models.DataAnalyst(
                 name=user_data.full_name,
                 email_id=user_data.email,
-                expertise="TBD"
+                # expertise="TBD"
             )
             db.add(new_analyst)
         elif user_data.role == "admin":
             print("INSIDE ADMIN BLOCK") 
-            new_admin = models.Admin(
+            new_admin = models.SystemAdmin(
                 name=user_data.full_name,
                 email_id=user_data.email,
-                privileges="all"
+                # privileges="all"
             )
             db.add(new_admin)
         else:

@@ -42,8 +42,10 @@ const Login = () => {
             navigate('/student')
         } else if(role === 'instructor') {
             navigate('/instructor')
-        } else if(role === 'administrator') {
+        } else if(role === 'admin') {
             navigate('/admin')
+        } else if(role === 'analyst') {
+            navigate('/analyst')
         }
         // const response = await fetch("http://127.0.0.1:8000/auth/login", {
         //   method: "POST",

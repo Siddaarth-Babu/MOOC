@@ -26,13 +26,18 @@ const Home = () => {
   }, [navigate])
 
   useEffect(() => {
-    if (!user) return
     let mounted = true
     setLoading(true)
     setError('')
 
     const token = localStorage.getItem('access_token')
-    // Fetch instructor home data from backend
+    if (!token) {
+      setError('Not authenticated')
+      setLoading(false)
+      return
+    }
+
+    // Fetch instructor home data from backend (run once on mount)
     const endpoint = 'http://127.0.0.1:8000/instructor'
 
     fetch(endpoint, {
@@ -53,7 +58,7 @@ const Home = () => {
       .then((data) => {
         if (!mounted) return
         // Extract instructor data from backend response
-        setUser(prev => ({ ...prev, firstName: data.instructor_name || 'Instructor' }))
+        setUser(prev => ({ ...(prev || {}), firstName: data.instructor_name || 'Instructor' }))
         // Set earnings data
         setEarnings({
           total: data.total_earnings || 0,
@@ -75,7 +80,7 @@ const Home = () => {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [])
 
   // Calculate earnings per course from courses array if API doesn't provide earnings data
   const averageEarningsPerCourse = courses.length > 0 ? (earnings.total / courses.length).toFixed(2) : '0.00'
