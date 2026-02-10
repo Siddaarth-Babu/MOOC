@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+# Load the variables from .env into the system
+load_dotenv(r"C:\Users\tinku\OneDrive\Desktop\DBMS Project\MOOC\backend\.env")
 from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 from backend import schemas,models,crud
@@ -8,7 +11,6 @@ from sqlalchemy import func
 from backend.database import get_db
 from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
-from dotenv import load_dotenv
 from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
@@ -30,8 +32,7 @@ app.add_middleware(
     allow_methods=["*"], # Allows GET, POST, DELETE, etc.
     allow_headers=["*"],
 )
-# Load the variables from .env into the system
-load_dotenv()
+
 
 # Fetch them using os.getenv(VARIABLE_NAME, DEFAULT_VALUE)
 SECRET_KEY = os.getenv("SECRET_KEY")
