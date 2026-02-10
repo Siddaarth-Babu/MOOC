@@ -8,6 +8,7 @@ import Footer from '../../components/instructor/Footer'
 const Home = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [instructorId, setInstructorId] = useState(null)
   const [courses, setCourses] = useState([])
   const [earnings, setEarnings] = useState({ total: 0, perCourse: {} })
   const [loading, setLoading] = useState(true)
@@ -26,13 +27,18 @@ const Home = () => {
   }, [navigate])
 
   useEffect(() => {
-    if (!user) return
     let mounted = true
     setLoading(true)
     setError('')
 
     const token = localStorage.getItem('access_token')
-    // Fetch instructor home data from backend
+    if (!token) {
+      setError('Not authenticated')
+      setLoading(false)
+      return
+    }
+
+    // Fetch instructor home data from backend (run once on mount)
     const endpoint = 'http://127.0.0.1:8000/instructor'
 
     fetch(endpoint, {
@@ -53,7 +59,11 @@ const Home = () => {
       .then((data) => {
         if (!mounted) return
         // Extract instructor data from backend response
-        setUser(prev => ({ ...prev, firstName: data.instructor_name || 'Instructor' }))
+        setUser(prev => ({ ...(prev || {}), firstName: data.instructor_name || 'Instructor' }))
+        // Set instructor_id for profile navigation
+        if (data.instructor_id) {
+          setInstructorId(data.instructor_id)
+        }
         // Set earnings data
         setEarnings({
           total: data.total_earnings || 0,
@@ -75,14 +85,14 @@ const Home = () => {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [])
 
   // Calculate earnings per course from courses array if API doesn't provide earnings data
   const averageEarningsPerCourse = courses.length > 0 ? (earnings.total / courses.length).toFixed(2) : '0.00'
 
   return (
     <div className="instructor-home">
-      <Navbar />
+      <Navbar instructorId={instructorId} />
       <div className="container instructor-home-container">
         <div className="instructor-welcome-section">
           <div>

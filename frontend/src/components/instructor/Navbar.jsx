@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-const Navbar = () => {
+const Navbar = ({ instructorId }) => {
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   const [user, setUser] = useState(() => {
@@ -22,7 +22,9 @@ const Navbar = () => {
 
   const goToProfile = () => {
     setProfileOpen(false)
-    navigate('/instructor/profile')
+    if (instructorId) {
+      navigate(`/instructor/profile/${instructorId}`)
+    }
   }
 
   return (

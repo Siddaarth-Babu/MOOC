@@ -212,6 +212,7 @@ def student_all_courses(
     all_courses = crud.get_all_courses(db,skip=0,limit=20)
     
     return {
+        "student_id": student.student_id,
         "student_name": student.name,
         "catalog": all_courses,
         "my_list": crud.get_student_courses(db,student.student_id)  # Using column from Student table
@@ -343,6 +344,59 @@ def update_profile(
         # This usually happens if they try to change to an email already in use
         raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 
+@app.get("/student/profile/{student_id}", response_model=schemas.Student)
+def get_student_profile(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_student: models.Student = Depends(get_curr_student)
+):
+    """
+    Fetch specific student's profile. Security check: student can only view their own profile.
+    """
+    # Security: only allow viewing own profile
+    if current_student.student_id != student_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    return student
+
+@app.patch("/student/profile/{student_id}", response_model=schemas.Student)
+def update_student_profile(
+    student_id: int,
+    profile_data: schemas.StudentUpdate,
+    db: Session = Depends(get_db),
+    current_student: models.Student = Depends(get_curr_student)
+):
+    """
+    Update specific student's profile. Security check: student can only update their own profile.
+    """
+    # Security: only allow updating own profile
+    if current_student.student_id != student_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    update_dict = profile_data.model_dump(exclude_unset=True)
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    
+    for key, value in update_dict.items():
+        setattr(student, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(student)
+        return student
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
+
 
 """ Routing for Instructor """
 @app.get("/instructor")
@@ -377,11 +431,65 @@ def get_home(
     avg_earnings = (total_earnings / total_courses) if total_courses > 0 else None
     
     return {
+        "instructor_id": instructor.instructor_id,
         "instructor_name": instructor.name,
         "total_courses": total_courses,
         "total_earnings": total_earnings,
         "per_course_breakdown": avg_earnings
     }
+
+@app.get("/instructor/profile/{instructor_id}", response_model=schemas.Instructor)
+def get_instructor_profile(
+    instructor_id: int,
+    db: Session = Depends(get_db),
+    current_instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """
+    Fetch specific instructor's profile. Security check: instructor can only view their own profile.
+    """
+    # Security: only allow viewing own profile
+    if current_instructor.instructor_id != instructor_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    instructor = db.query(models.Instructor).filter(models.Instructor.instructor_id == instructor_id).first()
+    if not instructor:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+    
+    return instructor
+
+@app.patch("/instructor/profile/{instructor_id}", response_model=schemas.Instructor)
+def update_instructor_profile(
+    instructor_id: int,
+    profile_data: schemas.InstructorUpdate,
+    db: Session = Depends(get_db),
+    current_instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """
+    Update specific instructor's profile. Security check: instructor can only update their own profile.
+    """
+    # Security: only allow updating own profile
+    if current_instructor.instructor_id != instructor_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    instructor = db.query(models.Instructor).filter(models.Instructor.instructor_id == instructor_id).first()
+    if not instructor:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+    
+    update_dict = profile_data.model_dump(exclude_unset=True)
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    
+    for key, value in update_dict.items():
+        setattr(instructor, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(instructor)
+        return instructor
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 
 
 @app.get("/instructor/courses/{course_id}")
@@ -798,6 +906,88 @@ def admin_university_view(
         "university": university,
         "courses": [c.course_name for c in courses] # Show them which courses are offered by this university
     }
+
+@app.post("/admin/course/new_course")
+def admin_create_course(
+    data: schemas.CourseCreateWithInstructors,
+    db: Session = Depends(get_db),
+    admin = Depends(get_curr_admin)
+):
+    try:
+        # 1. University
+        university = db.query(models.University).filter(
+            models.University.name == data.institute_name
+        ).first()
+        if not university:
+            raise HTTPException(status_code=404, detail="University not found")
+
+        # 2. Program (by NAME, not ID)
+        program = db.query(models.Program).filter(
+            models.Program.program_name == data.program_name
+        ).first()
+        if not program:
+            raise HTTPException(status_code=404, detail="Program not found")
+
+        # 3. Create course
+        new_course = models.Course(
+            course_name=data.course_name,
+            duration=data.duration,
+            course_fees=data.course_fees,
+            skill_level=data.skill_level,
+            institute_id=university.institute_id,
+            program_id=program.program_id
+        )
+        db.add(new_course)
+        db.flush()
+
+        # 4. Link instructors manually
+        for email in data.instructor_emails:
+            instructor = db.query(models.Instructor).filter(
+                models.Instructor.email_id == email
+            ).first()
+
+            if not instructor:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Instructor with email {email} not found"
+                )
+
+            db.execute(
+                models.course_instructor_link.insert().values(
+                    course_id=new_course.course_id,
+                    instructor_id=instructor.instructor_id
+                )
+            )
+
+        db.commit()
+
+        return {
+            "message": "Course created successfully",
+            "course_id": new_course.course_id
+        }
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Course creation failed")
+
+@app.post("/admin/new_program")
+def admin_create_program(
+    program_data: schemas.ProgramCreate,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    # 1. Check if program name already exists
+    existing_program = db.query(models.Program).filter(models.Program.program_name == program_data.program_name).first()
+    if existing_program:
+        raise HTTPException(status_code=400, detail="Program with this name already exists")
+
+    # 2. Create the program
+    new_program = crud.create_program(db, program_data)
+    return {
+        "message": f"Program '{new_program.program_name}' created successfully"
+    }
+
+
 
 ###############################################################################################################
 # @app.post("admin/course/new_course/{instructor_email}")

@@ -8,6 +8,7 @@ import Footer from '../../components/student/Footer'
 const Home = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [studentId, setStudentId] = useState(null)
   const [courses, setCourses] = useState([])
   const [catalog, setCatalog] = useState([])
   const [enrollConfirm, setEnrollConfirm] = useState({ show: false, course: null })
@@ -59,13 +60,17 @@ const Home = () => {
       })
       .then((data) => {
         if (!mounted) return
-        // Extract student name, catalog and enrolled courses from backend response
+        // Extract student info from backend response
         const studentName = data.student_name || 'Student'
         setUser(prev => ({ ...(prev || {}), firstName: studentName }))
         // my_list contains enrolled courses
         setCourses(Array.isArray(data.my_list) ? data.my_list : [])
         // catalog contains all available courses
         setCatalog(Array.isArray(data.catalog) ? data.catalog : [])
+        // Set student_id for profile navigation
+        if (data.student_id) {
+          setStudentId(data.student_id)
+        }
       })
       .catch((err) => {
         if (!mounted) return
@@ -182,7 +187,7 @@ const Home = () => {
 
   return (
     <div className="student-home">
-      <Navbar />
+      <Navbar studentId={studentId} />
       <div className="container student-home-container">
         <div className="student-welcome-section">
           <div>
