@@ -50,7 +50,7 @@ class StudentUpdate(BaseModel):
 
 class StudentCreate(StudentBase):
     """What we expect from React when a student signs up"""
-    dob: date
+    dob: Optional[date] = None
     # ... indicates the mandatory
     password: str = Field(..., min_length=8)
     contact_number: str

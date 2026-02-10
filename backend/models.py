@@ -59,7 +59,7 @@ class Student(Base):
 
     student_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    dob = Column(Date, nullable=False) 
+    dob = Column(Date, nullable=True) 
     country = Column(String(50))
     skill_level = Column(String(50))
     email_id = Column(String(100), unique=True, index=True, nullable=False)

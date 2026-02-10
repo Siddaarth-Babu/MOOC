@@ -79,19 +79,91 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Password too long")
     hashed_password = pwd_context.hash(user_data.password)
     
-    new_user = models.User(
-        full_name=user_data.full_name,
-        email=user_data.email,
-        hashed_password=hashed_password,
-        role=user_data.role
-    )
+    # new_user = models.User(
+    #     full_name=user_data.full_name,
+    #     email=user_data.email,
+    #     hashed_password=hashed_password,
+    #     role=user_data.role
+    # )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    # db.add(new_user)
+    # # db.commit()
+    # # db.refresh(new_user)
+    # db.flush()
 
-    return {"message": f"Successfully signed up as {new_user.role}"}
 
+    # #return {"message": f"Successfully signed up as {new_user.role}"}
+    # if user_data.role == "student":
+    #     new_student = models.Student(
+    #         name=user_data.full_name,
+    #         email_id=user_data.email,
+    #         dob=user_data.dob,
+    #         specialization=user_data.specialization,
+    #         country=user_data.country,
+    #         skill_level="Beginner"
+    #     )
+    #     db.add(new_student)
+
+    # db.commit()
+
+    # return {"message": "Signup successful"}
+    try:
+        # 4. Create auth user
+        new_user = models.User(
+            full_name=user_data.full_name,
+            email=user_data.email,
+            hashed_password=hashed_password,
+            role=user_data.role
+        )
+        print("ROLE RECEIVED:", user_data.role)
+        db.add(new_user)
+        db.flush()   # user.id available, not committed
+
+        # 5. Create role-specific row
+        if user_data.role == "student":
+            print("INSIDE STUDENT BLOCK") 
+            new_student = models.Student(
+                name=user_data.full_name,
+                email_id=user_data.email,
+                skill_level="Beginner",
+            )
+            db.add(new_student)
+        elif user_data.role == "instructor":
+            print("INSIDE INSTRUCTOR BLOCK") 
+            new_instructor = models.Instructor(
+                name=user_data.full_name,
+                email_id=user_data.email
+            )
+            db.add(new_instructor)
+        elif user_data.role == "analyst":
+            print("INSIDE ANALYST BLOCK") 
+            new_analyst = models.DataAnalyst(
+                name=user_data.full_name,
+                email_id=user_data.email,
+                expertise="TBD"
+            )
+            db.add(new_analyst)
+        elif user_data.role == "admin":
+            print("INSIDE ADMIN BLOCK") 
+            new_admin = models.Admin(
+                name=user_data.full_name,
+                email_id=user_data.email,
+                privileges="all"
+            )
+            db.add(new_admin)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid role specified")
+        # 6. ONE commit
+        db.commit()
+        return {"message": "Signup successful"}
+
+    except Exception as e:
+        db.rollback()
+        print("SIGNUP ERROR:", e)   # 👈 ADD THIS
+        raise HTTPException(
+            status_code=500,
+            detail="Signup failed"
+        )
 
 @app.post("/login")
 def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
