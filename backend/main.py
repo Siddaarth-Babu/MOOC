@@ -1,14 +1,15 @@
 import os
+from dotenv import load_dotenv
+load_dotenv(r"E:\Online Course Management Platform\MOOC\backend\.env")
 from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 from backend import schemas,models,crud
 # import schemas,models
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, insert
 from backend.database import get_db
 from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
-from dotenv import load_dotenv
 from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
@@ -31,7 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Load the variables from .env into the system
-load_dotenv()
 
 # Fetch them using os.getenv(VARIABLE_NAME, DEFAULT_VALUE)
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -203,7 +203,7 @@ def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
 
 """ Routing for Student """
 
-@app.get("/student/all-courses")
+@app.get("/student")
 def student_all_courses(
     student: models.Student = Depends(get_curr_student), # Returns Student model
     db: Session = Depends(get_db)
@@ -216,7 +216,7 @@ def student_all_courses(
         "my_list": crud.get_student_courses(db,student.student_id)  # Using column from Student table
     }
 
-@app.get("/student/home")
+@app.get("/student/enrollments")
 def student_home(
     student: models.Student = Depends(get_curr_student), # Returns Student model
     db: Session = Depends(get_db)
@@ -259,6 +259,42 @@ def get_student_course_view(
         "enrolled": True,
         "details": course, # Includes assignments, assessments, etc.
     }
+
+@app.post("/student/courses/{course_id}/enroll")
+def enroll_student(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    # 1. Check if the course even exists
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # 2. Check if the student is ALREADY enrolled
+    is_already_enrolled = db.query(models.course_student_link).filter(
+        models.course_student_link.c.course_id == course_id,
+        models.course_student_link.c.student_id == student.student_id
+    ).first()
+
+    if is_already_enrolled:
+        raise HTTPException(status_code=400, detail="You are already enrolled in this course")
+
+    try:
+        # 3. Insert into the link table
+        stmt = insert(models.course_student_link).values(
+            course_id=course_id, 
+            student_id=student.student_id
+        )
+        db.execute(stmt)
+        db.commit()
+        
+        return {"message": f"Successfully enrolled in {course.course_name}"}
+
+    except Exception as e:
+        db.rollback()
+        print(f"Enrollment Error: {e}")
+        raise HTTPException(status_code=500, detail="Enrollment failed")
 
 @app.post("/student/courses/{course_id}/submit_asg")
 def hand_assignment(

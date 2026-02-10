@@ -9,6 +9,9 @@ const Home = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [courses, setCourses] = useState([])
+  const [catalog, setCatalog] = useState([])
+  const [enrollConfirm, setEnrollConfirm] = useState({ show: false, course: null })
+  const [enrolling, setEnrolling] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -25,14 +28,19 @@ const Home = () => {
   }, [navigate])
 
   useEffect(() => {
-    if (!user) return
     let mounted = true
     setLoading(true)
     setError('')
 
     const token = localStorage.getItem('access_token')
-    // Fetch student home data from backend
-    const endpoint = 'http://127.0.0.1:8000/student/home'
+    if (!token) {
+      setError('Not authenticated')
+      setLoading(false)
+      return
+    }
+
+    // Fetch student home data from backend (run once on mount)
+    const endpoint = 'http://127.0.0.1:8000/student'
 
     fetch(endpoint, {
       method: 'GET',
@@ -51,11 +59,13 @@ const Home = () => {
       })
       .then((data) => {
         if (!mounted) return
-        // Extract student name and courses from backend response
+        // Extract student name, catalog and enrolled courses from backend response
         const studentName = data.student_name || 'Student'
-        setUser(prev => ({ ...prev, firstName: studentName }))
+        setUser(prev => ({ ...(prev || {}), firstName: studentName }))
         // my_list contains enrolled courses
         setCourses(Array.isArray(data.my_list) ? data.my_list : [])
+        // catalog contains all available courses
+        setCatalog(Array.isArray(data.catalog) ? data.catalog : [])
       })
       .catch((err) => {
         if (!mounted) return
@@ -70,25 +80,102 @@ const Home = () => {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [])
 
   const renderCourses = () => {
     if (loading) return <div className="student-loading">Loading courses...</div>
     if (error) return <div className="student-error">{error}</div>
-    if (!courses.length) return <div className="student-empty">You are not enrolled in any courses yet.</div>
+    if (!catalog.length && !courses.length) return <div className="student-empty">No courses available.</div>
+
+    // Show full catalog grid. Highlight courses already enrolled (from `courses`).
+    const enrolledIds = new Set((courses || []).map(x => String(x.course_id || x.id || x.courseId)))
+
+    const openEnroll = (course) => setEnrollConfirm({ show: true, course })
+    const closeEnroll = () => setEnrollConfirm({ show: false, course: null })
+
+    const handleConfirmEnroll = async () => {
+      if (!enrollConfirm.course) return
+      setEnrolling(true)
+      try {
+        const token = localStorage.getItem('access_token')
+        const courseId = enrollConfirm.course.course_id || enrollConfirm.course.id || enrollConfirm.course.courseId
+        const res = await fetch(`http://127.0.0.1:8000/student/courses/${encodeURIComponent(courseId)}/enroll`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ courseId })
+        })
+        if (!res.ok) {
+          const txt = await res.text()
+          throw new Error(txt || 'Enroll failed')
+        }
+        // On success, add course to enrolled list
+        setCourses((prev) => {
+          if (prev.find(c => String(c.course_id || c.id || c.courseId) === String(courseId))) return prev
+          return [...prev, enrollConfirm.course]
+        })
+        closeEnroll()
+      } catch (err) {
+        console.error('Enroll error:', err)
+        alert('Enrollment failed: ' + (err.message || 'Unknown'))
+      } finally {
+        setEnrolling(false)
+      }
+    }
 
     return (
-      <div className="student-courses-grid">
-        {courses.map((c) => (
-          <article key={c.id || c.courseId} className="student-course-item">
-            <h3 className="student-course-title">{c.title || c.name}</h3>
-            <p className="student-course-description">{c.description ? c.description.slice(0, 120) + (c.description.length > 120 ? '…' : '') : 'No description'}</p>
-            <div className="student-course-footer">
-              <Link to={`/student/courses/${c.id || c.courseId}`} className="student-course-link">View</Link>
-              <span className="student-course-progress">{c.progress ? `${c.progress}%` : ''}</span>
+      <div>
+        <div className="student-courses-grid">
+          {(catalog.length ? catalog : courses).map((c) => {
+            // Backend schema: Course -> course_id, course_name, duration, skill_level, course_fees
+            const id = c.course_id || c.id || c.courseId
+            const title = c.course_name || c.title || c.name
+            const description = c.description || c.summary || c.overview || ''
+            const duration = c.duration || c.course_duration || null
+            const skill = c.skill_level || c.level || ''
+            const fees = c.course_fees || c.fees || null
+            const enrolled = enrolledIds.has(String(id))
+            return (
+              <article key={id} className={`student-course-item ${enrolled ? 'enrolled' : ''}`}>
+                <div className="student-course-body">
+                  <h3 className="student-course-title">{title}</h3>
+                  {description ? <p className="student-course-description">{description.slice(0, 140) + (description.length > 140 ? '…' : '')}</p> : <p className="student-course-description muted">No description</p>}
+                  <div className="student-course-meta">
+                    {duration && <span className="meta-item">⏱ {duration} min</span>}
+                    {skill && <span className="meta-item">• {skill}</span>}
+                    {fees !== null && <span className="meta-item">• ${fees}</span>}
+                  </div>
+                </div>
+                <div className="student-course-footer">
+                  <Link to={`/student/courses/${id}`} className="student-course-link">View</Link>
+                  {enrolled ? (
+                    <span className="enrolled-badge">Enrolled</span>
+                  ) : (
+                    <button className="auth-submit-btn enroll-btn" onClick={() => openEnroll(c)}>Enroll</button>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+
+        {/* Confirm enroll modal */}
+        {enrollConfirm.show && (
+          <div className="modal-overlay" onClick={closeEnroll}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+              <h3>Confirm Enrollment</h3>
+              <p>Enroll in <strong>{enrollConfirm.course.title || enrollConfirm.course.name}</strong>?</p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button className="btn" onClick={closeEnroll} disabled={enrolling}>No</button>
+                <button className="auth-submit-btn" onClick={handleConfirmEnroll} disabled={enrolling}>{enrolling ? 'Enrolling...' : 'Yes, Enroll'}</button>
+              </div>
             </div>
-          </article>
-        ))}
+          </div>
+        )}
       </div>
     )
   }
