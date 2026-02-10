@@ -197,6 +197,42 @@ def hand_assignment(
 ):
     return crud.create_submission(db,subm,student.student_id)
 
+@app.get("/student/profile", response_model=schemas.Student)
+def view_profile(
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Returns the profile of the logged-in student based on their JWT.
+    """
+    return student
+
+@app.patch("/student/profile/update", response_model=schemas.Student)
+def update_profile(
+    profile_data: schemas.StudentUpdate, 
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Updates only the fields provided in the request body.
+    """
+    # Convert input to dict, skipping anything React didn't send
+    update_dict = profile_data.model_dump(exclude_unset=True)
+
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+
+    for key, value in update_dict.items():
+        setattr(student, key, value)
+
+    try:
+        db.commit()
+        db.refresh(student)
+        return student
+    except Exception as e:
+        db.rollback()
+        # This usually happens if they try to change to an email already in use
+        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 # @app.post("student/profile")
 # def view_profile():
 

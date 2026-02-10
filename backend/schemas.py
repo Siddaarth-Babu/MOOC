@@ -36,9 +36,17 @@ class Course(CourseBase):
 class StudentBase(BaseModel):
     name: str
     email_id : EmailStr
-    specialization: str
+    specialization: Optional[str] = None
     country: Optional[str] = None
     skill_level: Optional[str] = "Beginner"
+    
+# This allows React to send ONLY the fields that changed
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+    country: Optional[str] = None
+    specialization: Optional[str] = None
+    skill_level: Optional[str] = None
 
 class StudentCreate(StudentBase):
     """What we expect from React when a student signs up"""
