@@ -14,20 +14,15 @@ const Home = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const raw = localStorage.getItem('user')
-    if (!raw) {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
       // not logged in -> redirect to login
       navigate('/login')
       return
     }
-    try {
-      const parsed = JSON.parse(raw)
-      setUser(parsed)
-    } catch (err) {
-      console.warn('Invalid user in localStorage', err)
-      localStorage.removeItem('user')
-      navigate('/login')
-    }
+    // Set a minimal user object for greeting; real data fetched below
+    // TODO: Fetch user details from backend if needed for greeting
+    setUser({ email: 'Instructor' })
   }, [navigate])
 
   useEffect(() => {
@@ -36,22 +31,36 @@ const Home = () => {
     setLoading(true)
     setError('')
 
-    // Fetch teaching courses
-    fetch(`/api/instructor/courses`, {
+    const token = localStorage.getItem('access_token')
+    // Fetch instructor home data from backend
+    const endpoint = 'http://127.0.0.1:8000/instructor'
+
+    fetch(endpoint, {
       method: 'GET',
       credentials: 'include',
-      headers: { 'Accept': 'application/json' },
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     })
       .then(async (res) => {
         if (!res.ok) {
           const txt = await res.text()
-          throw new Error(txt || 'Failed to fetch courses')
+          throw new Error(txt || 'Failed to fetch teaching data')
         }
         return res.json()
       })
       .then((data) => {
         if (!mounted) return
-        setCourses(Array.isArray(data) ? data : data.courses || [])
+        // Extract instructor data from backend response
+        setUser(prev => ({ ...prev, firstName: data.instructor_name || 'Instructor' }))
+        // Set earnings data
+        setEarnings({
+          total: data.total_earnings || 0,
+          perCourse: data.per_course_breakdown || {}
+        })
+        // Set courses count
+        setCourses(new Array(data.total_courses || 0))
       })
       .catch((err) => {
         if (!mounted) return
@@ -61,25 +70,6 @@ const Home = () => {
       .finally(() => {
         if (!mounted) return
         setLoading(false)
-      })
-
-    // Fetch earnings data
-    fetch(`/api/instructor/earnings`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Accept': 'application/json' },
-    })
-      .then(async (res) => {
-        if (!res.ok) return { total: 0, perCourse: {} }
-        return res.json()
-      })
-      .then((data) => {
-        if (!mounted) return
-        setEarnings(data || { total: 0, perCourse: {} })
-      })
-      .catch(() => {
-        // Silently fail on earnings fetch, use default
-        if (mounted) setEarnings({ total: 0, perCourse: {} })
       })
 
     return () => {

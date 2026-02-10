@@ -13,20 +13,15 @@ const Home = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const raw = localStorage.getItem('user')
-    if (!raw) {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
       // not logged in -> redirect to login
       navigate('/login')
       return
     }
-    try {
-      const parsed = JSON.parse(raw)
-      setUser(parsed)
-    } catch (err) {
-      console.warn('Invalid user in localStorage', err)
-      localStorage.removeItem('user')
-      navigate('/login')
-    }
+    // Set a minimal user object for greeting; real data fetched below
+    // TODO: Fetch user details from backend if needed for greeting
+    setUser({ email: 'Student' })
   }, [navigate])
 
   useEffect(() => {
@@ -35,13 +30,17 @@ const Home = () => {
     setLoading(true)
     setError('')
 
-    // Placeholder API path; replace with your backend endpoint.
-    const endpoint = `/api/student/courses`
+    const token = localStorage.getItem('access_token')
+    // Fetch student home data from backend
+    const endpoint = 'http://127.0.0.1:8000/student/home'
 
     fetch(endpoint, {
       method: 'GET',
       credentials: 'include',
-      headers: { 'Accept': 'application/json' },
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -52,8 +51,11 @@ const Home = () => {
       })
       .then((data) => {
         if (!mounted) return
-        // Expecting an array of courses; if API shape differs, adapt this
-        setCourses(Array.isArray(data) ? data : data.courses || [])
+        // Extract student name and courses from backend response
+        const studentName = data.student_name || 'Student'
+        setUser(prev => ({ ...prev, firstName: studentName }))
+        // my_list contains enrolled courses
+        setCourses(Array.isArray(data.my_list) ? data.my_list : [])
       })
       .catch((err) => {
         if (!mounted) return

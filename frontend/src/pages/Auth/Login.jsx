@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom'
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -16,30 +15,35 @@ const Login = () => {
     
     try {
       // TODO: Connect to actual API endpoint
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   credentials: 'include',
-      //   body: JSON.stringify({ email, password, rememberMe })
-      // })
-      // if (!response.ok) throw new Error('Login failed')
-      // const data = await response.json()
+      const response = await fetch('http://127.0.0.1:8000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      })
+      if (!response.ok) throw new Error('Login failed')
+      const data = await response.json()
+      const { access_token, role } = data
       // Store token and redirect
-        const fakeResponse = {
-            role: 'student',
-            user: {
-                id: 1,
-                name: 'Demo Student',
-                email: email,
-                firstName: 'Demo'
-            }
-        }
+        // const fakeResponse = {
+        //     role: 'student',
+        //     user: {
+        //         id: 1,
+        //         name: 'Demo Student',
+        //         email: email,
+        //         firstName: 'Demo'
+        //     }
+        // }
 
-        localStorage.setItem('user', JSON.stringify(fakeResponse.user))
-        localStorage.setItem('role', fakeResponse.role)
+        localStorage.setItem('access_token', access_token)
+        localStorage.setItem('role', role)
 
-        if(fakeResponse.role === 'student') {
+        if(role === 'student') {
             navigate('/student')
+        } else if(role === 'instructor') {
+            navigate('/instructor')
+        } else if(role === 'administrator') {
+            navigate('/admin')
         }
         // const response = await fetch("http://127.0.0.1:8000/auth/login", {
         //   method: "POST",
@@ -60,7 +64,7 @@ const Login = () => {
         // } else if (role === "administrator") {
         //   navigate("/admin", { state: { user } })
         // }
-      console.log('Login attempt:', { email, password, rememberMe })
+      console.log('Login attempt:', { email, password })
       // Simulate success after 1s
       setTimeout(() => {
         setLoading(false)
@@ -113,16 +117,8 @@ const Login = () => {
               />
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="form-checkbox-group">
-              <label className="form-checkbox">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                Remember me
-              </label>
+            {/* Forgot Password */}
+            <div style={{ textAlign: 'right' }}>
               <a href="/forgot-password" className="form-link"> 
                 {/* {Implement forgot password mechanism later} */}
                 Forgot password?
