@@ -7,7 +7,7 @@ const QuickAccess = () => {
     <div className="admin-quick-access">
       <button className="qa-btn" onClick={() => navigate('/admin/manage-courses')}>Add / Manage Courses</button>
       <button className="qa-btn" onClick={() => navigate('/admin/manage-users')}>Add / Manage Users</button>
-      
+      <button className="qa-btn" onClick={() => navigate('/admin/manage-universities')}>Manage Universities</button>
     </div>
   )
 }

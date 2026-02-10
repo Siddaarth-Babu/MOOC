@@ -918,6 +918,16 @@ h3{color:var(--brand-1)}
 .analyst-detail-section{margin-bottom:1.5rem}
 .analyst-detail-section-title{font-weight:700;font-size:1rem;color:#222;margin-bottom:0.75rem}
 .analyst-course-item{background:#f9fafb;padding:1rem;border-radius:8px;margin-bottom:0.75rem;border-left:3px solid #1abc9c}
+
+/* Admin manage pages */
+.admin-manage-courses, .admin-manage-universities { padding: 1rem 0 }
+.admin-form { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); margin-bottom: 1rem }
+.admin-course-list, .admin-univ-list { list-style:none; padding:0; margin:0 }
+.admin-course-item, .admin-univ-item { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border:1px solid #eef2f7; border-radius:8px; margin-bottom:0.6rem; background:white }
+.admin-course-item .muted, .admin-univ-item .muted { font-size:0.9rem; color:#6b7280 }
+.admin-form .form-input { width:100%; margin-bottom:0.5rem }
+.admin-manage-courses select { padding:0.45rem; border-radius:6px }
+
 .analyst-course-item-name{font-weight:600;color:#222;margin-bottom:0.25rem}
 .analyst-course-item-meta{font-size:0.85rem;color:#6b7280;margin:0.25rem 0}
 
