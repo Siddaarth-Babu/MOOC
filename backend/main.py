@@ -139,16 +139,14 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
             print("INSIDE ANALYST BLOCK") 
             new_analyst = models.DataAnalyst(
                 name=user_data.full_name,
-                email_id=user_data.email,
-                expertise="TBD"
+                email_id=user_data.email
             )
             db.add(new_analyst)
         elif user_data.role == "admin":
             print("INSIDE ADMIN BLOCK") 
-            new_admin = models.Admin(
+            new_admin = models.SystemAdmin(
                 name=user_data.full_name,
-                email_id=user_data.email,
-                privileges="all"
+                email_id=user_data.email
             )
             db.add(new_admin)
         else:
@@ -778,9 +776,90 @@ def admin_university_view(
 #     return {
 #         "message": f"Course '{newcourse.course_name}' created successfully under {university.institute_name}"
     #}
+
+@app.post("/admin/course/new_course")
+def admin_create_course(
+    data: schemas.CourseCreateWithInstructors,
+    db: Session = Depends(get_db),
+    admin = Depends(get_curr_admin)
+):
+    try:
+        # 1. University
+        university = db.query(models.University).filter(
+            models.University.name == data.institute_name
+        ).first()
+        if not university:
+            raise HTTPException(status_code=404, detail="University not found")
+
+        # 2. Program (by NAME, not ID)
+        program = db.query(models.Program).filter(
+            models.Program.program_name == data.program_name
+        ).first()
+        if not program:
+            raise HTTPException(status_code=404, detail="Program not found")
+
+        # 3. Create course
+        new_course = models.Course(
+            course_name=data.course_name,
+            duration=data.duration,
+            course_fees=data.course_fees,
+            skill_level=data.skill_level,
+            institute_id=university.institute_id,
+            program_id=program.program_id
+        )
+        db.add(new_course)
+        db.flush()
+
+        # 4. Link instructors manually
+        for email in data.instructor_emails:
+            instructor = db.query(models.Instructor).filter(
+                models.Instructor.email_id == email
+            ).first()
+
+            if not instructor:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Instructor with email {email} not found"
+                )
+
+            db.execute(
+                models.course_instructor_link.insert().values(
+                    course_id=new_course.course_id,
+                    instructor_id=instructor.instructor_id
+                )
+            )
+
+        db.commit()
+
+        return {
+            "message": "Course created successfully",
+            "course_id": new_course.course_id
+        }
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Course creation failed")
+
+@app.post("/admin/new_program")
+def admin_create_program(
+    program_data: schemas.ProgramCreate,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    # 1. Check if program name already exists
+    existing_program = db.query(models.Program).filter(models.Program.program_name == program_data.program_name).first()
+    if existing_program:
+        raise HTTPException(status_code=400, detail="Program with this name already exists")
+
+    # 2. Create the program
+    new_program = crud.create_program(db, program_data)
+    return {
+        "message": f"Program '{new_program.program_name}' created successfully"
+    }
+
 #################################################################################################################
 
-@app.post("admin/instructor/new_instructor")
+@app.post("/admin/instructor/new_instructor")
 def admin_create_instructor(
     instructor_data: schemas.InstructorCreate,
     db: Session = Depends(get_db),
@@ -814,7 +893,7 @@ def admin_create_university(
         "message": f"University '{new_university.name}' created successfully in {new_university.city}, {new_university.country}"
     }
 
-@app.post("admin/student/new_student")
+@app.post("/admin/student/new_student")
 def admin_create_student(
     student_data: schemas.StudentCreate,
     db: Session = Depends(get_db),
@@ -831,7 +910,7 @@ def admin_create_student(
         "message": f"Student '{new_student.name}' created successfully"
     }
 
-@app.post("admin/data_analyst/new_data_analyst")
+@app.post("/admin/data_analyst/new_data_analyst")
 def admin_create_data_analyst(
     analyst_data: schemas.DataAnalystCreate,
     db: Session = Depends(get_db),
@@ -848,7 +927,7 @@ def admin_create_data_analyst(
         "message": f"Data Analyst '{new_analyst.name}' created successfully"
     }
 
-@app.post("admin/course/{course_id}/assign_instructor/{instructor_email}")
+@app.post("/admin/course/{course_id}/assign_instructor/{instructor_email}")
 def admin_assign_instructor_to_course(
     course_id: int,
     instructor_email: str,
