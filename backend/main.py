@@ -233,11 +233,6 @@ def update_profile(
         db.rollback()
         # This usually happens if they try to change to an email already in use
         raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
-# @app.post("student/profile")
-# def view_profile():
-
-# @app.post("student/profile/update")
-# def update_profile():
 
 
 """ Routing for Instructor """
