@@ -23,13 +23,12 @@ const Profile = () => {
   // Profile fields
   const [email, setEmail] = useState('') // fetched and readonly
   const [name, setName] = useState('')
-  const [age, setAge] = useState('')
+  const [dob, setDob] = useState('')
   const [country, setCountry] = useState('')
   const [skillLevel, setSkillLevel] = useState('')
   const [specialization, setSpecialization] = useState('')
-  const [contactNumber, setContactNumber] = useState('')
 
-  // Course list left empty — backend should populate this
+  // Course list fetched from backend
   const [enrollments, setEnrollments] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [savedProfile, setSavedProfile] = useState(null)
@@ -43,78 +42,52 @@ useEffect(() => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
-        headers: {
-          'Accept': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}` // uncomment if required
-        }
-      })
-
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+      const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+      
+      // Fetch profile from backend
+      const res = await fetch('http://127.0.0.1:8000/student/profile', { headers })
+      
       if (!mounted) return
-
+      
       if (res.ok) {
         const json = await res.json()
-        const s = json.student || json
-        setEmail(s.email || '')
+        const s = json
+        setEmail(s.email_id || '')
         setName(s.name || '')
-        setAge(s.age ?? '')
+        setDob(s.dob || '')
         setCountry(s.country || '')
-        setSkillLevel(s.skillLevel || '')
+        setSkillLevel(s.skill_level || '')
         setSpecialization(s.specialization || '')
-        setContactNumber(s.contactNumber || '')
-
-        // snapshot current saved profile for Cancel
+        
         setSavedProfile({
           name: s.name || '',
-          age: s.age ?? '',
+          dob: s.dob || '',
           country: s.country || '',
-          skillLevel: s.skillLevel || '',
-          specialization: s.specialization || '',
-          contactNumber: s.contactNumber || ''
+          skillLevel: s.skill_level || '',
+          specialization: s.specialization || ''
         })
-
-        if (json.enrollments) setEnrollments(json.enrollments)
       } else {
-        // try to read error message for debugging
         const errBody = await res.text().catch(() => null)
-        setError(`Failed to load profile (${res.status}): ${errBody || res.statusText}`)
-        // fallback demo values (as before)
-        const fallback = {
-          name: 'Sravan Maddipatla',
-          age: '22',
-          country: 'India',
-          skillLevel: 'Intermediate',
-          specialization: 'Computer Networks',
-          contactNumber: '+91-9876543210'
-        }
-        setEmail('tinku2543m@gmail.com')
-        setName(fallback.name)
-        setAge(fallback.age)
-        setCountry(fallback.country)
-        setSkillLevel(fallback.skillLevel)
-        setSpecialization(fallback.specialization)
-        setContactNumber(fallback.contactNumber)
-        setSavedProfile(fallback)
+        throw new Error(`Failed to load profile (${res.status}): ${errBody || res.statusText}`)
+      }
+
+      // Fetch enrollments/courses
+      const enrollRes = await fetch('http://127.0.0.1:8000/student/enrollments', { headers })
+      if (enrollRes.ok) {
+        const enrollData = await enrollRes.json()
+        if (enrollData.my_list) setEnrollments(enrollData.my_list)
       }
     } catch (err) {
-      // network issue
-      setError(`Network error: ${err.message}`)
-      const fallback = {
-        name: 'Sravan Maddipatla',
-        age: '22',
-        country: 'India',
-        skillLevel: 'Intermediate',
-        specialization: 'Computer Networks',
-        contactNumber: '+91-9876543210'
+      if (mounted) {
+        setError(`Error: ${err.message}`)
       }
-      setEmail('tinku2543m@gmail.com')
-      setName(fallback.name)
-      setAge(fallback.age)
-      setCountry(fallback.country)
-      setSkillLevel(fallback.skillLevel)
-      setSpecialization(fallback.specialization)
-      setContactNumber(fallback.contactNumber)
-      setSavedProfile(fallback)
     } finally {
       if (mounted) setLoading(false)
     }
@@ -122,7 +95,7 @@ useEffect(() => {
 
   fetchProfile()
   return () => { mounted = false }
-}, [studentId])
+}, [])
 
 
 // Improved handleSave
@@ -138,56 +111,52 @@ const handleSave = async (e) => {
   }
 
   try {
-    // convert age to number if possible
-    const ageVal = age === '' ? null : Number(age)
     const payload = {
       name,
-      age: ageVal,
+      dob,
       country,
-      skillLevel,
-      specialization,
-      contactNumber
+      skill_level: skillLevel,
+      specialization
     }
 
-    // choose method PATCH vs PUT per your API design
-    const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
-      method: 'PUT', // or 'PATCH' if your server expects partial updates
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        // 'Authorization': `Bearer ${localStorage.getItem('token')}` // add if needed
-      },
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw new Error('Not authenticated')
+    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+    const res = await fetch('http://127.0.0.1:8000/student/profile/update', {
+      method: 'PATCH',
+      headers,
       body: JSON.stringify(payload)
     })
 
-    // read body (works for ok or not ok)
     const text = await res.text()
     let body = null
     try { body = JSON.parse(text) } catch (_) { body = text }
 
     if (!res.ok) {
-      // prefer server-sent message if present
       const message = body?.message || body?.error || (typeof body === 'string' ? body : null) || `Server returned ${res.status}`
       throw new Error(message)
     }
 
-    // success — server returned updated model
-    const updated = body || payload
+    // Update saved profile with skill_level mapped back to skillLevel
     const newSnapshot = {
-      name: updated.name ?? name,
-      age: updated.age ?? age,
-      country: updated.country ?? country,
-      skillLevel: updated.skillLevel ?? skillLevel,
-      specialization: updated.specialization ?? specialization,
-      contactNumber: updated.contactNumber ?? contactNumber
+      name: payload.name,
+      dob: payload.dob,
+      country: payload.country,
+      skillLevel: payload.skill_level,
+      specialization: payload.specialization
     }
     setSavedProfile(newSnapshot)
     setName(newSnapshot.name)
-    setAge(newSnapshot.age)
+    setDob(newSnapshot.dob)
     setCountry(newSnapshot.country)
     setSkillLevel(newSnapshot.skillLevel)
     setSpecialization(newSnapshot.specialization)
-    setContactNumber(newSnapshot.contactNumber)
     setIsEditing(false)
     alert('Profile saved')
   } catch (err) {
@@ -199,11 +168,10 @@ const handleSave = async (e) => {
 const handleCancel = () => {
   if (savedProfile) {
     setName(savedProfile.name ?? '')
-    setAge(savedProfile.age ?? '')
+    setDob(savedProfile.dob ?? '')
     setCountry(savedProfile.country ?? '')
     setSkillLevel(savedProfile.skillLevel ?? '')
     setSpecialization(savedProfile.specialization ?? '')
-    setContactNumber(savedProfile.contactNumber ?? '')
   }
   setError(null)
   setIsEditing(false)
@@ -239,8 +207,8 @@ const handleCancel = () => {
 
               <div className="profile-display-row">
                 <div>
-                  <div className="profile-display-label">Age</div>
-                  <div className="profile-display-value">{age}</div>
+                  <div className="profile-display-label">Date of Birth</div>
+                  <div className="profile-display-value">{dob}</div>
                 </div>
                 <div>
                   <div className="profile-display-label">Country</div>
@@ -257,11 +225,6 @@ const handleCancel = () => {
                   <div className="profile-display-label">Specialization</div>
                   <div className="profile-display-value">{specialization}</div>
                 </div>
-              </div>
-
-              <div style={{marginTop:8}}>
-                <div className="profile-display-label">Contact number</div>
-                <div className="profile-display-value">{contactNumber}</div>
               </div>
 
               <div className="profile-save-row">
@@ -282,8 +245,8 @@ const handleCancel = () => {
                 </div>
 
                 <div className="profile-field">
-                  <label className="profile-label">Age</label>
-                  <input className="profile-input" value={age} onChange={(e) => setAge(e.target.value)} />
+                  <label className="profile-label">Date of Birth</label>
+                  <input className="profile-input" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
                 </div>
 
                 <div className="profile-field">
@@ -305,15 +268,9 @@ const handleCancel = () => {
                 </select>
                 </div>
 
-
                 <div className="profile-field">
                   <label className="profile-label">Specialization</label>
                   <input className="profile-input" value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
-                </div>
-
-                <div className="profile-field full-width">
-                  <label className="profile-label">Contact number</label>
-                  <input className="profile-input" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} />
                 </div>
               </div>
 
@@ -327,18 +284,22 @@ const handleCancel = () => {
         </div>
 
         <aside className="profile-sidebar">
-          <h3>Course details</h3>
+          <h3>Enrolled Courses</h3>
           <div>
-            <strong>Course profiles</strong>
+            <strong>Your Courses</strong>
             <ul className="profile-course-list">
               {enrollments.length === 0 ? (
-                <li className="muted">No courses yet (will be fetched from database)</li>
+                <li className="muted">No courses enrolled yet</li>
               ) : (
-                enrollments.map((enr) => (
-                  <li key={enr.courseId}>
-                    <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/courses/${encodeURIComponent(enr.courseId)}`, { state: { courseData: enr.courseDetails } }) }} className="link-brand">{enr.courseName} ({enr.courseId})</a>
-                  </li>
-                ))
+                enrollments.map((course) => {
+                  const courseId = course.course_id || course.id
+                  const courseName = course.course_name || course.name || course.title
+                  return (
+                    <li key={courseId}>
+                      <a href={`/student/courses/${courseId}`} className="link-brand">{courseName} ({courseId})</a>
+                    </li>
+                  )
+                })
               )}
             </ul>
           </div>
