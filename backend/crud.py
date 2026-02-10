@@ -92,6 +92,17 @@ def remove_instructor_by_id(db:Session, inst_id: int):
 
     return False
 
+def assign_instructor_to_course(db: Session, course_id: int, instructor_id: int):
+    """Link instructor to course via the course_instructor_link table"""
+    db.execute(
+        models.course_instructor_link.insert().values(
+            course_id=course_id,
+            instructor_id=instructor_id
+        )
+    )
+    db.commit()
+    return True
+
 
 """ System Admin Crud operations """
 
@@ -316,7 +327,7 @@ def delete_dataanalyst(db:Session, dataanalyst_id: int):
 
 def create_program(db:Session, program: schemas.ProgramCreate):
     new_program = models.Program(
-        program_name=program.program_name,
+        program_type=program.program_type,
     )
     db.add(new_program)
     db.commit()

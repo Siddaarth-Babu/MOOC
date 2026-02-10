@@ -926,14 +926,14 @@ def admin_create_course(
             models.University.name == data.institute_name
         ).first()
         if not university:
-            raise HTTPException(status_code=404, detail="University not found")
+            raise HTTPException(status_code=404, detail=f"University '{data.institute_name}' not found")
 
         # 2. Program (by NAME, not ID)
         program = db.query(models.Program).filter(
-            models.Program.program_name == data.program_name
+            models.Program.program_type == data.program_type
         ).first()
         if not program:
-            raise HTTPException(status_code=404, detail="Program not found")
+            raise HTTPException(status_code=404, detail=f"Program '{data.program_type}' not found")
 
         # 3. Create course
         new_course = models.Course(
@@ -954,9 +954,10 @@ def admin_create_course(
             ).first()
 
             if not instructor:
+                db.rollback()
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Instructor with email {email} not found"
+                    detail=f"Instructor with email '{email}' not found"
                 )
 
             db.execute(
@@ -973,9 +974,12 @@ def admin_create_course(
             "course_id": new_course.course_id
         }
 
-    except Exception:
+    except HTTPException:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Course creation failed")
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Course creation failed: {str(e)}")
 
 @app.post("/admin/new_program")
 def admin_create_program(
@@ -984,14 +988,14 @@ def admin_create_program(
     admin: models.SystemAdmin = Depends(get_curr_admin)
 ):
     # 1. Check if program name already exists
-    existing_program = db.query(models.Program).filter(models.Program.program_name == program_data.program_name).first()
+    existing_program = db.query(models.Program).filter(models.Program.program_type == program_data.program_type).first()
     if existing_program:
         raise HTTPException(status_code=400, detail="Program with this name already exists")
 
     # 2. Create the program
     new_program = crud.create_program(db, program_data)
     return {
-        "message": f"Program '{new_program.program_name}' created successfully"
+        "message": f"Program '{new_program.program_type}' created successfully"
     }
 
 
@@ -1045,7 +1049,7 @@ def admin_create_university(
         raise HTTPException(status_code=400, detail="University with this name already exists")
 
     # 2. Create the university
-    new_university = crud.create_university(db, university_data)
+    new_university = crud.create_University(db, university_data)
     return {
         "message": f"University '{new_university.name}' created successfully in {new_university.city}, {new_university.country}"
     }

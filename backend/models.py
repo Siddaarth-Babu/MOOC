@@ -135,7 +135,7 @@ class Program(Base):
     __tablename__ = "program"
 
     program_id = Column(Integer, primary_key=True, index=True)
-    program_type = Column(String(50)) 
+    program_type = Column(String(50))
 
     # One to Many
     courses = relationship("Course",back_populates="program")

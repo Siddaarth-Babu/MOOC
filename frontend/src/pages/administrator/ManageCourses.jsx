@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import Navbar from '../../components/administrator/Navbar'
+import Footer from '../../components/administrator/Footer'
 
 const ManageCourses = () => {
   const [courses, setCourses] = useState([])
@@ -13,7 +15,7 @@ const ManageCourses = () => {
   const [fees, setFees] = useState('')
   const [programName, setProgramName] = useState('')
   const [instituteName, setInstituteName] = useState('')
-  const [instructorEmails, setInstructorEmails] = useState('')
+  const [instructorsArray, setInstructorsArray] = useState([{ email: '' }])
 
   useEffect(() => {
     let mounted = true
@@ -56,9 +58,9 @@ const ManageCourses = () => {
       duration: Number(duration || 0),
       skill_level: skillLevel,
       course_fees: Number(fees || 0),
-      program_name: programName,
+      program_type: programName,
       institute_name: instituteName,
-      instructor_emails: instructorEmails.split(',').map(s => s.trim()).filter(Boolean)
+      instructor_emails: instructorsArray.map(i => i.email).filter(Boolean)
     }
 
     try {
@@ -74,6 +76,20 @@ const ManageCourses = () => {
       console.error(err)
       setError('Create failed: ' + (err.message || err))
     }
+  }
+
+  const addInstructorField = () => {
+    setInstructorsArray([...instructorsArray, { email: '' }])
+  }
+
+  const removeInstructorField = (index) => {
+    setInstructorsArray(instructorsArray.filter((_, i) => i !== index))
+  }
+
+  const updateInstructor = (index, value) => {
+    const updated = [...instructorsArray]
+    updated[index].email = value
+    setInstructorsArray(updated)
   }
 
   const handleDelete = async (courseId) => {
@@ -103,9 +119,11 @@ const ManageCourses = () => {
   }
 
   return (
-    <div className="admin-manage-courses container">
-      <h2>Manage Courses</h2>
-      {error && <div className="alert alert-error">{error}</div>}
+    <div>
+      <Navbar />
+      <div className="admin-manage-courses container">
+        <h2>Manage Courses</h2>
+        {error && <div className="alert alert-error">{error}</div>}
 
       <form className="admin-form" onSubmit={handleCreate}>
         <h3>Create Course</h3>
@@ -122,7 +140,26 @@ const ManageCourses = () => {
           <input className="form-input" placeholder="Institute name" value={instituteName} onChange={e => setInstituteName(e.target.value)} />
         </div>
         <div>
-          <input className="form-input" placeholder="Instructor emails (comma separated)" value={instructorEmails} onChange={e => setInstructorEmails(e.target.value)} />
+          <label style={{display: 'block', marginBottom: '8px', fontWeight: 'bold'}}>Instructors (add multiple)</label>
+          {instructorsArray.map((instr, idx) => (
+            <div key={idx} style={{display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center'}}>
+              <input 
+                className="form-input" 
+                placeholder={`Instructor email ${idx + 1}`} 
+                value={instr.email} 
+                onChange={e => updateInstructor(idx, e.target.value)}
+                style={{flex: 1}}
+              />
+              {instructorsArray.length > 1 && (
+                <button className="btn" type="button" onClick={() => removeInstructorField(idx)} style={{backgroundColor: '#dc3545'}}>
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          <button className="btn" type="button" onClick={addInstructorField} style={{marginTop: '8px', backgroundColor: '#28a745'}}>
+            + Add Instructor
+          </button>
         </div>
         <div style={{marginTop:8}}>
           <button className="auth-submit-btn" type="submit">Create Course</button>
@@ -154,6 +191,8 @@ const ManageCourses = () => {
           </ul>
         )}
       </section>
+      </div>
+      <Footer />
     </div>
   )
 }
