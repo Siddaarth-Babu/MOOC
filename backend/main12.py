@@ -134,6 +134,7 @@ def sysadmin_data_analysts(
     return {
         "data_analysts": all_data_analysts,
     }
+
 @app.get("/sysadmin/data_analysts/{analyst_id}")
 def sysadmin_data_analyst_view( 
     analyst_id: int,
@@ -180,7 +181,7 @@ def sysadmin_university_view(
 #     course_data: schemas.CourseCreate,
 #     db: Session = Depends(get_db),
 #     sysadmin: models.SystemAdmin = Depends(get_curr_sysadmin)
-# ):
+# ):    
 #     # 1. Check if university exists
 #     university = db.query(models.University).filter(models.University.institute_id == course_data.institute_id).first()
 #     if not university:
