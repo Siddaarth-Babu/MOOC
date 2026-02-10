@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 # Load the variables from .env into the system
-load_dotenv(r"C:\Users\tinku\OneDrive\Desktop\DBMS Project\MOOC\backend\.env")
+load_dotenv(r"E:\Online Course Management Platform\MOOC\backend\.env")
 from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 from backend import schemas,models,crud
@@ -889,6 +889,13 @@ def admin_universities(
     return {
         "universities": all_universities,
     }
+
+
+@app.get("/universities")
+def public_universities(db: Session = Depends(get_db)):
+    """Public endpoint returning all universities for homepage display"""
+    all_universities = db.query(models.University).all()
+    return {"universities": all_universities}
 @app.get("/admin/universities/{institute_id}")
 def admin_university_view(
     institute_id: int,
@@ -1043,6 +1050,36 @@ def admin_create_university(
         "message": f"University '{new_university.name}' created successfully in {new_university.city}, {new_university.country}"
     }
 
+
+@app.delete("/admin/universities/{institute_id}")
+def admin_delete_university(
+    institute_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    university = db.query(models.University).filter(models.University.institute_id == institute_id).first()
+    if not university:
+        raise HTTPException(status_code=404, detail="University not found")
+    try:
+        # delete related courses and their content
+        courses = db.query(models.Course).filter(models.Course.institute_id == institute_id).all()
+        for c in courses:
+            cid = c.course_id
+            db.execute(models.course_instructor_link.delete().where(models.course_instructor_link.c.course_id == cid))
+            db.execute(models.course_student_link.delete().where(models.course_student_link.c.course_id == cid))
+            db.query(models.Video).filter(models.Video.course_id == cid).delete()
+            db.query(models.Notes).filter(models.Notes.course_id == cid).delete()
+            db.query(models.Assignment).filter(models.Assignment.course_id == cid).delete()
+            db.query(models.Textbook).filter(models.Textbook.course_id == cid).delete()
+            db.delete(c)
+
+        db.delete(university)
+        db.commit()
+        return {"message": "University and its courses deleted"}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete university")
+
 @app.post("/admin/student/new_student")
 def admin_create_student(
     student_data: schemas.StudentCreate,
@@ -1099,6 +1136,62 @@ def admin_assign_instructor_to_course(
     return {
         "message": f"Instructor '{instructor.name}' assigned to course '{course.course_name}' successfully"
     }
+
+
+@app.delete("/admin/course/{course_id}")
+def admin_delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    # Delete course and all related content (videos, notes, assignments, links)
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    try:
+        # remove course-instructor links
+        db.execute(models.course_instructor_link.delete().where(models.course_instructor_link.c.course_id == course_id))
+        # remove student enrollments
+        db.execute(models.course_student_link.delete().where(models.course_student_link.c.course_id == course_id))
+        # remove related videos, notes, assignments, textbook
+        db.query(models.Video).filter(models.Video.course_id == course_id).delete()
+        db.query(models.Notes).filter(models.Notes.course_id == course_id).delete()
+        db.query(models.Assignment).filter(models.Assignment.course_id == course_id).delete()
+        db.query(models.Textbook).filter(models.Textbook.course_id == course_id).delete()
+        # finally delete the course
+        db.delete(course)
+        db.commit()
+        return {"message": "Course and related content deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete course")
+
+
+@app.delete("/admin/course/{course_id}/instructor/{instructor_id}")
+def admin_remove_instructor_from_course(
+    course_id: int,
+    instructor_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    # Remove a specific instructor association from a course
+    link = db.execute(models.course_instructor_link.select().where(
+        (models.course_instructor_link.c.course_id == course_id) &
+        (models.course_instructor_link.c.instructor_id == instructor_id)
+    )).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="Instructor not assigned to this course")
+    try:
+        db.execute(models.course_instructor_link.delete().where(
+            (models.course_instructor_link.c.course_id == course_id) &
+            (models.course_instructor_link.c.instructor_id == instructor_id)
+        ))
+        db.commit()
+        return {"message": "Instructor removed from course"}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove instructor from course")
 
 
 @app.post("/admin/student/{student_id}")  
