@@ -205,6 +205,43 @@ def hand_assignment(
 
 
 """ Routing for Instructor """
+@app.get("/instructor/home")
+def get_home(
+    instructor: models.Instructor = Depends(get_curr_instructor),
+    db: Session = Depends(get_db)
+):
+    # 1. Fetch all course IDs this instructor is associated with
+    my_course_ids = db.query(models.course_instructor_link.c.course_id).filter(
+        models.course_instructor_link.c.instructor_id == instructor.instructor_id
+    ).all()
+    
+    # Flatten the list of tuples into a simple list of IDs
+    course_ids = [c[0] for c in my_course_ids]
+
+    # 2. Query numbers for each course
+    total_earnings = 0
+
+    for c_id in course_ids:
+        # Get course details (fees)
+        course = db.query(models.Course).filter(models.Course.course_id == c_id).first()
+        
+        # Count enrollments for this specific course
+        enrollment_count = db.query(models.course_student_link).filter(
+            models.course_student_link.c.course_id == c_id
+        ).count()
+
+        earnings = enrollment_count * (course.course_fees or 0)
+        total_earnings += earnings
+
+    total_courses = len(course_ids)
+    avg_earnings = (total_earnings / total_courses) if total_courses > 0 else None
+    
+    return {
+        "total_courses": total_courses,
+        "total_earnings": total_earnings,
+        "per_course_breakdown": avg_earnings
+    }
+
 
 @app.get("/instructor/courses/{course_id}")
 def get_inst_course_view(
