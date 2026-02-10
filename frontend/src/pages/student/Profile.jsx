@@ -23,7 +23,7 @@ const Profile = () => {
   // Profile fields
   const [email, setEmail] = useState('') // fetched and readonly
   const [name, setName] = useState('')
-  const [age, setAge] = useState('')
+  const [dob, setDob] = useState('')
   const [country, setCountry] = useState('')
   const [skillLevel, setSkillLevel] = useState('')
   const [specialization, setSpecialization] = useState('')
@@ -43,65 +43,45 @@ useEffect(() => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
-        headers: {
-          'Accept': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}` // uncomment if required
-        }
-      })
-
-      if (!mounted) return
-
-      if (res.ok) {
-        const json = await res.json()
-        const s = json.student || json
-        setEmail(s.email || '')
-        setName(s.name || '')
-        setAge(s.age ?? '')
-        setCountry(s.country || '')
-        setSkillLevel(s.skillLevel || '')
-        setSpecialization(s.specialization || '')
-        setContactNumber(s.contactNumber || '')
-
-        // snapshot current saved profile for Cancel
-        setSavedProfile({
-          name: s.name || '',
-          age: s.age ?? '',
-          country: s.country || '',
-          skillLevel: s.skillLevel || '',
-          specialization: s.specialization || '',
-          contactNumber: s.contactNumber || ''
-        })
-
-        if (json.enrollments) setEnrollments(json.enrollments)
-      } else {
-        // try to read error message for debugging
-        const errBody = await res.text().catch(() => null)
-        setError(`Failed to load profile (${res.status}): ${errBody || res.statusText}`)
-        // fallback demo values (as before)
-        const fallback = {
-          name: 'Sravan Maddipatla',
-          age: '22',
-          country: 'India',
-          skillLevel: 'Intermediate',
-          specialization: 'Computer Networks',
-          contactNumber: '+91-9876543210'
-        }
-        setEmail('tinku2543m@gmail.com')
-        setName(fallback.name)
-        setAge(fallback.age)
-        setCountry(fallback.country)
-        setSkillLevel(fallback.skillLevel)
-        setSpecialization(fallback.specialization)
-        setContactNumber(fallback.contactNumber)
-        setSavedProfile(fallback)
-      }
-    } catch (err) {
-      // network issue
-      setError(`Network error: ${err.message}`)
+      // TODO: Uncomment below to fetch from backend using studentId
+      // const token = localStorage.getItem('token')
+      // const headers = {
+      //   'Accept': 'application/json',
+      //   ...(token && { 'Authorization': `Bearer ${token}` })
+      // }
+      // const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, { headers })
+      //
+      // if (!mounted) return
+      //
+      // if (res.ok) {
+      //   const json = await res.json()
+      //   const s = json.student || json
+      //   setEmail(s.email || '')
+      //   setName(s.name || '')
+      //   setDob(s.dob || s.dateOfBirth || '')
+      //   setCountry(s.country || '')
+      //   setSkillLevel(s.skillLevel || '')
+      //   setSpecialization(s.specialization || '')
+      //   setContactNumber(s.contactNumber || '')
+      //
+      //   setSavedProfile({
+      //     name: s.name || '',
+      //     dob: s.dob || s.dateOfBirth || '',
+      //     country: s.country || '',
+      //     skillLevel: s.skillLevel || '',
+      //     specialization: s.specialization || '',
+      //     contactNumber: s.contactNumber || ''
+      //   })
+      //
+      //   if (json.enrollments) setEnrollments(json.enrollments)
+      // } else {
+      //   const errBody = await res.text().catch(() => null)
+      //   throw new Error(`Failed to load profile (${res.status}): ${errBody || res.statusText}`)
+      // }
+      // Demo - fallback
       const fallback = {
         name: 'Sravan Maddipatla',
-        age: '22',
+        dob: '2002-05-15',
         country: 'India',
         skillLevel: 'Intermediate',
         specialization: 'Computer Networks',
@@ -109,7 +89,26 @@ useEffect(() => {
       }
       setEmail('tinku2543m@gmail.com')
       setName(fallback.name)
-      setAge(fallback.age)
+      setDob(fallback.dob)
+      setCountry(fallback.country)
+      setSkillLevel(fallback.skillLevel)
+      setSpecialization(fallback.specialization)
+      setContactNumber(fallback.contactNumber)
+      setSavedProfile(fallback)
+    } catch (err) {
+      // network issue
+      setError(`Network error: ${err.message}`)
+      const fallback = {
+        name: 'Sravan Maddipatla',
+        dob: '2002-05-15',
+        country: 'India',
+        skillLevel: 'Intermediate',
+        specialization: 'Computer Networks',
+        contactNumber: '+91-9876543210'
+      }
+      setEmail('tinku2543m@gmail.com')
+      setName(fallback.name)
+      setDob(fallback.dob)
       setCountry(fallback.country)
       setSkillLevel(fallback.skillLevel)
       setSpecialization(fallback.specialization)
@@ -138,52 +137,51 @@ const handleSave = async (e) => {
   }
 
   try {
-    // convert age to number if possible
-    const ageVal = age === '' ? null : Number(age)
     const payload = {
       name,
-      age: ageVal,
+      dob,
       country,
       skillLevel,
       specialization,
       contactNumber
     }
 
-    // choose method PATCH vs PUT per your API design
-    const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
-      method: 'PUT', // or 'PATCH' if your server expects partial updates
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        // 'Authorization': `Bearer ${localStorage.getItem('token')}` // add if needed
-      },
-      body: JSON.stringify(payload)
-    })
+    // TODO: Uncomment below to send to backend using studentId
+    // const token = localStorage.getItem('token')
+    // const headers = {
+    //   'Content-Type': 'application/json',
+    //   'Accept': 'application/json',
+    //   ...(token && { 'Authorization': `Bearer ${token}` })
+    // }
+    // const res = await fetch(`/api/students/${encodeURIComponent(studentId)}`, {
+    //   method: 'PUT',
+    //   headers,
+    //   body: JSON.stringify(payload)
+    // })
+    //
+    // const text = await res.text()
+    // let body = null
+    // try { body = JSON.parse(text) } catch (_) { body = text }
+    //
+    // if (!res.ok) {
+    //   const message = body?.message || body?.error || (typeof body === 'string' ? body : null) || `Server returned ${res.status}`
+    //   throw new Error(message)
+    // }
+    //
+    // const updated = body || payload
 
-    // read body (works for ok or not ok)
-    const text = await res.text()
-    let body = null
-    try { body = JSON.parse(text) } catch (_) { body = text }
-
-    if (!res.ok) {
-      // prefer server-sent message if present
-      const message = body?.message || body?.error || (typeof body === 'string' ? body : null) || `Server returned ${res.status}`
-      throw new Error(message)
-    }
-
-    // success — server returned updated model
-    const updated = body || payload
+    // Demo: Update state directly
     const newSnapshot = {
-      name: updated.name ?? name,
-      age: updated.age ?? age,
-      country: updated.country ?? country,
-      skillLevel: updated.skillLevel ?? skillLevel,
-      specialization: updated.specialization ?? specialization,
-      contactNumber: updated.contactNumber ?? contactNumber
+      name: payload.name,
+      dob: payload.dob,
+      country: payload.country,
+      skillLevel: payload.skillLevel,
+      specialization: payload.specialization,
+      contactNumber: payload.contactNumber
     }
     setSavedProfile(newSnapshot)
     setName(newSnapshot.name)
-    setAge(newSnapshot.age)
+    setDob(newSnapshot.dob)
     setCountry(newSnapshot.country)
     setSkillLevel(newSnapshot.skillLevel)
     setSpecialization(newSnapshot.specialization)
@@ -199,7 +197,7 @@ const handleSave = async (e) => {
 const handleCancel = () => {
   if (savedProfile) {
     setName(savedProfile.name ?? '')
-    setAge(savedProfile.age ?? '')
+    setDob(savedProfile.dob ?? '')
     setCountry(savedProfile.country ?? '')
     setSkillLevel(savedProfile.skillLevel ?? '')
     setSpecialization(savedProfile.specialization ?? '')
@@ -239,8 +237,8 @@ const handleCancel = () => {
 
               <div className="profile-display-row">
                 <div>
-                  <div className="profile-display-label">Age</div>
-                  <div className="profile-display-value">{age}</div>
+                  <div className="profile-display-label">Date of Birth</div>
+                  <div className="profile-display-value">{dob}</div>
                 </div>
                 <div>
                   <div className="profile-display-label">Country</div>
@@ -282,8 +280,8 @@ const handleCancel = () => {
                 </div>
 
                 <div className="profile-field">
-                  <label className="profile-label">Age</label>
-                  <input className="profile-input" value={age} onChange={(e) => setAge(e.target.value)} />
+                  <label className="profile-label">Date of Birth</label>
+                  <input className="profile-input" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
                 </div>
 
                 <div className="profile-field">
