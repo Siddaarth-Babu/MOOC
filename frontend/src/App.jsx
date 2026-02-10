@@ -13,6 +13,7 @@ import ManageUsers from './pages/administrator/ManageUsers.jsx'
 import ManageCoursesAdmin from './pages/administrator/ManageCourses.jsx'
 import ProfileAdmin from './pages/administrator/Profile.jsx'
 
+
 import CourseDetails from './pages/student/CourseDetails.jsx'
 import CourseCard from './components/student/CourseCard.jsx'
 import MyEnrollments from './pages/student/MyEnrollments.jsx'

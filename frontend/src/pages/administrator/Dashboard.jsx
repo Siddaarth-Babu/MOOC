@@ -26,40 +26,47 @@ const AdminDashboard = () => {
     }
     setUser({ email: 'Admin' })
 
-    // Fetch admin data from backend
+    /* START CHANGES
+       Replaced the previous inline fetch logic with a single fetch here in Dashboard.jsx.
+       We will fetch /admin once and pass the resulting data down to <Statistics adminData={adminData} />.
+    */
+
     let mounted = true
     setLoading(true)
     setError('')
 
-    fetch('http://127.0.0.1:8000/admin', {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-    })
-      .then(async (res) => {
+    const fetchAdmin = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/admin', {
+          method: 'GET',
+          credentials: 'include', // keep this if your backend uses cookies for auth
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        })
+
         if (!res.ok) {
           const txt = await res.text()
           throw new Error(txt || 'Failed to fetch admin data')
         }
-        return res.json()
-      })
-      .then((data) => {
+        const data = await res.json()
         if (!mounted) return
         setAdminData(data)
         setUser(prev => ({ ...prev, firstName: data.admin_name || 'Admin' }))
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!mounted) return
-        console.error(err)
+        console.error('Admin dashboard fetch error:', err)
         setError('Could not load admin dashboard. Try again later.')
-      })
-      .finally(() => {
+      } finally {
         if (!mounted) return
         setLoading(false)
-      })
+      }
+    }
+
+    fetchAdmin()
+
+    /* END CHANGES */
 
     return () => {
       mounted = false
@@ -75,7 +82,8 @@ const AdminDashboard = () => {
           <p className="muted">Overview of platform activity</p>
         </section>
 
-        <Statistics />
+        {/* Pass fetched adminData down to Statistics */}
+        <Statistics adminData={adminData} loading={loading} error={error} />
 
         <div className="admin-quick-wrap">
           <h3 className="admin-quick-title">Quick Access</h3>

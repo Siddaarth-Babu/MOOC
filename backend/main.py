@@ -141,15 +141,15 @@ def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
             new_analyst = models.DataAnalyst(
                 name=user_data.full_name,
                 email_id=user_data.email,
-                expertise="TBD"
+                # expertise="TBD"
             )
             db.add(new_analyst)
         elif user_data.role == "admin":
             print("INSIDE ADMIN BLOCK") 
-            new_admin = models.Admin(
+            new_admin = models.SystemAdmin(
                 name=user_data.full_name,
                 email_id=user_data.email,
-                privileges="all"
+                # privileges="all"
             )
             db.add(new_admin)
         else:
@@ -695,6 +695,7 @@ def admin_instructors(
     return {
         "instructors": all_instructors,
     }
+
 @app.get("/admin/instructors/{instructor_id}")
 def admin_instructor_view(
     instructor_id: int,
@@ -728,6 +729,7 @@ def admin_students(
     return {
         "students": all_students,
     }
+
 @app.get("/admin/students/{student_id}")
 def admin_student_view(  
     student_id: int,
@@ -817,7 +819,7 @@ def admin_university_view(
     #}
 #################################################################################################################
 
-@app.post("admin/instructor/new_instructor")
+@app.post("/admin/instructor/new_instructor")
 def admin_create_instructor(
     instructor_data: schemas.InstructorCreate,
     db: Session = Depends(get_db),
@@ -834,7 +836,7 @@ def admin_create_instructor(
         "message": f"Instructor '{new_instructor.name}' created successfully"
     }
 
-@app.post("admin/university/new_university")
+@app.post("/admin/university/new_university")
 def admin_create_university(
     university_data: schemas.UniversityCreate,
     db: Session = Depends(get_db),
@@ -851,7 +853,7 @@ def admin_create_university(
         "message": f"University '{new_university.name}' created successfully in {new_university.city}, {new_university.country}"
     }
 
-@app.post("admin/student/new_student")
+@app.post("/admin/student/new_student")
 def admin_create_student(
     student_data: schemas.StudentCreate,
     db: Session = Depends(get_db),
@@ -868,7 +870,7 @@ def admin_create_student(
         "message": f"Student '{new_student.name}' created successfully"
     }
 
-@app.post("admin/data_analyst/new_data_analyst")
+@app.post("/admin/data_analyst/new_data_analyst")
 def admin_create_data_analyst(
     analyst_data: schemas.DataAnalystCreate,
     db: Session = Depends(get_db),
@@ -885,7 +887,7 @@ def admin_create_data_analyst(
         "message": f"Data Analyst '{new_analyst.name}' created successfully"
     }
 
-@app.post("admin/course/{course_id}/assign_instructor/{instructor_email}")
+@app.post("/admin/course/{course_id}/assign_instructor/{instructor_email}")
 def admin_assign_instructor_to_course(
     course_id: int,
     instructor_email: str,
@@ -907,3 +909,138 @@ def admin_assign_instructor_to_course(
     return {
         "message": f"Instructor '{instructor.name}' assigned to course '{course.course_name}' successfully"
     }
+
+
+@app.post("/admin/student/{student_id}")  
+def admin_update_student(
+    student_id: int,
+    update_data: schemas.StudentUpdate,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    update_dict = update_data.model_dump(exclude_unset=True)
+
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+
+    for key, value in update_dict.items():
+        setattr(student, key, value)
+
+    try:
+        db.commit()
+        db.refresh(student)
+        return {
+            "message": f"Student '{student.name}' updated successfully",
+            "updated_student": student
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
+    
+
+
+@app.post("/admin/student/{student_id}")
+def remove_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    try:
+        db.delete(student)
+        db.commit()
+        return {
+            "message": f"Student '{student.name}' removed successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove student")
+    
+
+@app.post("/admin/instructor/{instructor_id}")
+def remove_instructor(
+    instructor_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    instructor = db.query(models.Instructor).filter(models.Instructor.instructor_id == instructor_id).first()
+    if not instructor:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+
+    try:
+        db.delete(instructor)
+        db.commit()
+        return {
+            "message": f"Instructor '{instructor.name}' removed successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove instructor")
+    
+
+@app.post("/admin/university/{institute_id}")
+def remove_university(
+    institute_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    university = db.query(models.University).filter(models.University.institute_id == institute_id).first()
+    if not university:
+        raise HTTPException(status_code=404, detail="University not found")
+
+    try:
+        db.delete(university)
+        db.commit()
+        return {
+            "message": f"University '{university.name}' removed successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove university")
+    
+@app.post("/admin/data_analyst/{analyst_id}")
+def remove_data_analyst(
+    analyst_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    analyst = db.query(models.DataAnalyst).filter(models.DataAnalyst.analyst_id == analyst_id).first()
+    if not analyst:
+        raise HTTPException(status_code=404, detail="Data Analyst not found")
+
+    try:
+        db.delete(analyst)
+        db.commit()
+        return {
+            "message": f"Data Analyst '{analyst.name}' removed successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove data analyst")
+    
+@app.post("/admin/course/{course_id}")
+def remove_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    try:
+        db.delete(course)
+        db.commit()
+        return {
+            "message": f"Course '{course.course_name}' removed successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove course")
