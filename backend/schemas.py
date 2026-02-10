@@ -2,7 +2,7 @@ from __future__ import annotations # fixes the circular dependency
 from pydantic import BaseModel, EmailStr, Field
 from datetime import date
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 # Pydantic is a data validatio library
 # Inheriting base model
 # Validation
@@ -79,6 +79,19 @@ class InstructorCreate(InstructorBase):
 class Instructor(InstructorBase):
 
     instructor_id: int
+    name: str
+    email_id: EmailStr
+    department: Optional[str] = None
+    dob: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+class InstructorUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+    department: Optional[str] = None
+    dob: Optional[date] = None
 
     class Config:
         from_attributes = True
@@ -264,3 +277,12 @@ class StudentSubmission(SubmissionBase):
 
     class Config:
         from_attributes = True
+
+
+class CourseCreateWithInstructors(BaseModel):
+    course_name: str
+    duration: int
+    skill_level: str
+    course_fees: int
+    program_type: str
+    instructor_emails: List[EmailStr]

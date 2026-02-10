@@ -51,13 +51,13 @@ const App = () => {
         <Route path="/student/enrollments/:id" element={<CourseDetails />} />
         <Route path="/student/enrollments" element={<MyEnrollments />} />
         <Route path="/coursepage" element={<CoursePage />} />
-        <Route path="/student/profile" element={<Profile />} />
+        <Route path="/student/profile/:studentId" element={<Profile />} />
         
         <Route path="/coursecard" element={<CourseCard2 />} />
         <Route path="/instructor/teaching/:id" element={<CourseDetails2 />} />
-        <Route path="/coursepage" element={<CoursePage2 />} />
+        <Route path="/instructor/coursepage" element={<CoursePage2 />} />
         <Route path="/instructor/teaching" element={<MyTeaching />} />
-        <Route path="/instructor/profile" element={<ProfileInstructor />} />
+        <Route path="/instructor/profile/:instructorId" element={<ProfileInstructor />} />
 
         <Route path="/analyst" element={<Dashboard2 />} />
         <Route path="/analyst/profile" element={<ProfileAnalyst />} />

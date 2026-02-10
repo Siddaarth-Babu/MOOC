@@ -38,6 +38,11 @@ const Profile = () => {
 useEffect(() => {
   let mounted = true
 
+  if (!studentId) {
+    setLoading(false)
+    return
+  }
+
   const fetchProfile = async () => {
     setLoading(true)
     setError(null)
@@ -51,8 +56,8 @@ useEffect(() => {
         'Authorization': `Bearer ${token}`
       }
       
-      // Fetch profile from backend
-      const res = await fetch('http://127.0.0.1:8000/student/profile', { headers })
+      // Fetch profile from backend using studentId from route params
+      const res = await fetch(`http://127.0.0.1:8000/student/profile/${studentId}`, { headers })
       
       if (!mounted) return
       
@@ -86,6 +91,7 @@ useEffect(() => {
       }
     } catch (err) {
       if (mounted) {
+        console.error('Profile fetch error:', err)
         setError(`Error: ${err.message}`)
       }
     } finally {
@@ -95,7 +101,7 @@ useEffect(() => {
 
   fetchProfile()
   return () => { mounted = false }
-}, [])
+}, [studentId])
 
 
 // Improved handleSave
@@ -128,7 +134,7 @@ const handleSave = async (e) => {
       'Accept': 'application/json',
       'Authorization': `Bearer ${token}`
     }
-    const res = await fetch('http://127.0.0.1:8000/student/profile/update', {
+    const res = await fetch(`http://127.0.0.1:8000/student/profile/${studentId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify(payload)
@@ -177,11 +183,13 @@ const handleCancel = () => {
   setIsEditing(false)
 }
 
+  if (!studentId) return <div className="student-loading">Invalid student ID</div>
   if (loading) return <div className="student-loading">Loading profile…</div>
+  if (error) return <div className="student-error">{error}</div>
 
   return (
     <div className="profile-page">
-      <Navbar />
+      <Navbar studentId={studentId} />
       <div className="profile-header">
         <div className="profile-avatar">{(name || 'U').split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}</div>
         <div>

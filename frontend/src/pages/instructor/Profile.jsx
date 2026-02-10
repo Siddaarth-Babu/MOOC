@@ -1,111 +1,115 @@
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import Navbar from '../../components/instructor/Navbar'
 import Footer from '../../components/instructor/Footer'
 
 const Profile = () => {
-  const [user, setUser] = useState(null)
-  const [courses, setCourses] = useState([])
+  const { instructorId } = useParams()
   const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
+  const [error, setError] = useState(null)
+  const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [contact, setContact] = useState('')
   const [department, setDepartment] = useState('')
   const [dob, setDob] = useState('')
+  const [courses, setCourses] = useState([])
+  const [isEditing, setIsEditing] = useState(false)
   const [savedProfile, setSavedProfile] = useState(null)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     let mounted = true
-    const raw = localStorage.getItem('user')
-    const token = localStorage.getItem('token')
-    const parsed = raw ? JSON.parse(raw) : null
-    const instructorId = parsed?.instructor_id
+    const token = localStorage.getItem('access_token')
 
-    // TODO: Uncomment below to fetch from backend using instructor ID
-    // if (instructorId) {
-    //   const headers = token ? { Authorization: `Bearer ${token}` } : {}
-    //   fetch(`/instructor/${instructorId}`, { headers })
-    //     .then(async (res) => {
-    //       if (!res.ok) throw new Error('Failed to fetch instructor profile')
-    //       return res.json()
-    //     })
-    //     .then((data) => {
-    //       if (!mounted) return
-    //       setUser(data)
-    //     })
-    //     .catch((err) => {
-    //       if (!mounted) return
-    //       console.error(err)
-    //       // Fallback to localStorage
-    //       if (mounted) setUser(parsed)
-    //     })
-    // } else {
-    //   if (mounted) setUser(parsed)
-    // }
-
-    // Demo: Load from localStorage
-    if (mounted) setUser(parsed)
-
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const headers = token ? { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` } : {}
 
     async function load() {
-      setLoading(true)
       try {
-        // Try instructor-specific courses endpoint
-        const res = await fetch('/instructor/courses', { headers })
+        // Fetch instructor's courses from backend
+        const res = await fetch('http://127.0.0.1:8000/instructor', { headers })
         if (res.ok) {
           const data = await res.json()
-          // Accept either { courses: [...] } or array
-          const list = Array.isArray(data) ? data : data.courses || data
-          setCourses(list)
-        } else {
-          // fallback: if we have instructor id, try admin endpoint (may require different auth)
-          if (parsed?.instructor_id) {
-            const r2 = await fetch(`/admin/instructors/${parsed.instructor_id}`, { headers })
-            if (r2.ok) {
-              const d2 = await r2.json()
-              const mapped = (d2.courses || []).map((c, idx) => {
-                if (typeof c === 'string') return { id: idx, title: c, enrolled: 0 }
-                return c
-              })
-              setCourses(mapped)
-            }
-          }
+          // Extract course info if available - for now just set empty
+          setCourses([])
         }
       } catch (err) {
         console.error('Failed to load instructor courses', err)
-      } finally {
-        setLoading(false)
       }
     }
 
-    load()
+    if (token) load()
     return () => { mounted = false }
   }, [])
 
   useEffect(() => {
-    // initialize editable fields from `user` when loaded
-    if (user) {
-      const initialName = user.firstName ? `${user.firstName} ${user.lastName || ''}` : user.name || ''
-      setName(initialName)
-      setContact(user.contact || user.phone || '')
-      setDepartment(user.department || user.dept || '')
-      setDob(user.dob || user.dateOfBirth || '')
-      setSavedProfile({ name: initialName, contact: user.contact || user.phone || '', department: user.department || user.dept || '', dob: user.dob || user.dateOfBirth || '' })
+    let mounted = true
+
+    if (!instructorId) {
+      setLoading(false)
+      return
     }
-  }, [user])
+
+    const fetchProfile = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const token = localStorage.getItem('access_token')
+        if (!token) {
+          throw new Error('Not authenticated')
+        }
+        const headers = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+        
+        const url = `http://127.0.0.1:8000/instructor/profile/${instructorId}`
+        console.log('Fetching instructor profile from:', url)
+        console.log('Using token:', token.substring(0, 20) + '...')
+        
+        // Fetch profile from backend using instructorId
+        const res = await fetch(url, { headers })
+        
+        if (!mounted) return
+        
+        console.log('Response status:', res.status)
+        const responseText = await res.text()
+        console.log('Response body:', responseText)
+        
+        if (res.ok) {
+          const data = JSON.parse(responseText)
+          setEmail(data.email_id || '')
+          setName(data.name || '')
+          setDepartment(data.department || '')
+          setDob(data.dob || '')
+          
+          setSavedProfile({
+            name: data.name || '',
+            department: data.department || '',
+            dob: data.dob || ''
+          })
+        } else {
+          throw new Error(`Server error (${res.status}): ${responseText}`)
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Profile fetch error:', err)
+          setError(`Error: ${err.message}`)
+        }
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    fetchProfile()
+    return () => { mounted = false }
+  }, [instructorId])
 
   const initials = (() => {
-    if (!user) return 'I'
-    if (user.firstName) return `${user.firstName[0] || ''}${user.lastName ? user.lastName[0] : ''}`
-    if (user.name) return user.name.split(' ').map(n => n[0]).slice(0,2).join('')
-    return (user.email || 'I')[0]
+    if (!name) return 'I'
+    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
   })()
 
   const handleCancel = () => {
     if (savedProfile) {
       setName(savedProfile.name || '')
-      setContact(savedProfile.contact || '')
       setDepartment(savedProfile.department || '')
       setDob(savedProfile.dob || '')
     }
@@ -116,68 +120,72 @@ const Profile = () => {
   const handleSave = async (e) => {
     e.preventDefault()
     setError(null)
-    // build payload — split name into first/last simple heuristic
-    const [firstName, ...rest] = (name || '').trim().split(' ')
-    const lastName = rest.length ? rest.join(' ') : ''
 
     const payload = {
-      firstName: firstName || null,
-      lastName: lastName || null,
-      contact: contact || null,
-      department: department || null,
-      dob: dob || null
+      name,
+      department,
+      dob
     }
 
     try {
-      const token = localStorage.getItem('token')
-      const headers = { 'Content-Type': 'application/json' }
-      if (token) headers.Authorization = `Bearer ${token}`
-      const instructorId = user?.instructor_id
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+      const res = await fetch(`http://127.0.0.1:8000/instructor/profile/${instructorId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload)
+      })
 
-      // TODO: Uncomment below to send to backend
-      // const res = await fetch(`/instructor/${instructorId}`, {
-      //   method: 'PUT',
-      //   headers,
-      //   body: JSON.stringify(payload)
-      // })
-      //
-      // if (!res.ok) {
-      //   const text = await res.text().catch(() => '')
-      //   throw new Error(text || `Server returned ${res.status}`)
-      // }
-      //
-      // const updated = await res.json().catch(() => null)
+      const text = await res.text()
+      let body = null
+      try { body = JSON.parse(text) } catch (_) { body = text }
 
-      // Demo: Update localStorage only
-      const newUser = { ...user }
-      if (payload.firstName) newUser.firstName = payload.firstName
-      if (payload.lastName) newUser.lastName = payload.lastName
-      newUser.contact = payload.contact
-      newUser.department = payload.department
-      newUser.dob = payload.dob
-      localStorage.setItem('user', JSON.stringify(newUser))
-      setUser(newUser)
-      setSavedProfile({ name, contact, department, dob })
+      if (!res.ok) {
+        const message = body?.message || body?.error || (typeof body === 'string' ? body : null) || `Server returned ${res.status}`
+        throw new Error(message)
+      }
+
+      // Update saved profile
+      setSavedProfile({
+        name: payload.name,
+        department: payload.department,
+        dob: payload.dob
+      })
+      setName(payload.name)
+      setDepartment(payload.department)
+      setDob(payload.dob)
       setIsEditing(false)
+      alert('Profile saved')
     } catch (err) {
       setError(err.message || 'Save failed')
     }
   }
 
+  if (!instructorId) return <div className="student-loading">Invalid instructor ID</div>
+  if (loading) return <div className="student-loading">Loading profile…</div>
+  if (error) return <div className="student-error">{error}</div>
+
   return (
     <>
-      <Navbar />
+      <Navbar instructorId={instructorId} />
 
       <div className="profile-page container">
         <div className="profile-header">
           <div className="profile-avatar">{initials}</div>
           <div>
-            <h2 className="profile-name">{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.name || 'Instructor'}</h2>
-            <div className="profile-specialization muted">Instructor profile</div>
-          </div>
+          <h2 className="profile-name">{name || 'Instructor'}</h2>
+          <div className="profile-specialization muted">Instructor profile</div>
         </div>
+      </div>
 
-        <div className="profile-grid">
+      <div className="profile-grid">
           <aside className="profile-sidebar">
             <h4 className="admin-quick-title">Courses</h4>
 
@@ -208,36 +216,26 @@ const Profile = () => {
           <section className="profile-display">
             <h4 className="admin-quick-title">Instructor Details</h4>
 
-            <div className="profile-display-row">
-              <label className="profile-display-label">INSTRUCTOR ID</label>
-              <div className="profile-display-value">{user?.instructor_id ?? user?.id ?? '—'}</div>
-            </div>
-
             {!isEditing ? (
               <>
                 <div className="profile-display-row">
                   <label className="profile-display-label">NAME</label>
-                  <div className="profile-display-value">{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.name ?? '—'}</div>
+                  <div className="profile-display-value">{name || '—'}</div>
                 </div>
 
                 <div className="profile-display-row">
                   <label className="profile-display-label">EMAIL</label>
-                  <div className="profile-display-value">{user?.email ?? '—'}</div>
-                </div>
-
-                <div className="profile-display-row">
-                  <label className="profile-display-label">CONTACT</label>
-                  <div className="profile-display-value">{user?.contact ?? user?.phone ?? '—'}</div>
+                  <div className="profile-display-value">{email || '—'}</div>
                 </div>
 
                 <div className="profile-display-row">
                   <label className="profile-display-label">DEPARTMENT</label>
-                  <div className="profile-display-value">{user?.department ?? user?.dept ?? '—'}</div>
+                  <div className="profile-display-value">{department || '—'}</div>
                 </div>
 
                 <div className="profile-display-row">
                   <label className="profile-display-label">DATE OF BIRTH</label>
-                  <div className="profile-display-value">{user?.dob ?? user?.dateOfBirth ?? '—'}</div>
+                  <div className="profile-display-value">{dob || '—'}</div>
                 </div>
 
                 <div style={{ marginTop: 8 }}>
@@ -250,11 +248,6 @@ const Profile = () => {
                   <div className="profile-field full-width">
                     <label className="profile-label">NAME</label>
                     <input className="profile-input" value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-
-                  <div className="profile-field full-width">
-                    <label className="profile-label">CONTACT</label>
-                    <input className="profile-input" value={contact} onChange={(e) => setContact(e.target.value)} />
                   </div>
 
                   <div className="profile-field full-width">

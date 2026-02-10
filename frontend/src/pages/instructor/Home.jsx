@@ -8,6 +8,7 @@ import Footer from '../../components/instructor/Footer'
 const Home = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [instructorId, setInstructorId] = useState(null)
   const [courses, setCourses] = useState([])
   const [earnings, setEarnings] = useState({ total: 0, perCourse: {} })
   const [loading, setLoading] = useState(true)
@@ -59,6 +60,10 @@ const Home = () => {
         if (!mounted) return
         // Extract instructor data from backend response
         setUser(prev => ({ ...(prev || {}), firstName: data.instructor_name || 'Instructor' }))
+        // Set instructor_id for profile navigation
+        if (data.instructor_id) {
+          setInstructorId(data.instructor_id)
+        }
         // Set earnings data
         setEarnings({
           total: data.total_earnings || 0,
@@ -87,7 +92,7 @@ const Home = () => {
 
   return (
     <div className="instructor-home">
-      <Navbar />
+      <Navbar instructorId={instructorId} />
       <div className="container instructor-home-container">
         <div className="instructor-welcome-section">
           <div>
