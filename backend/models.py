@@ -102,6 +102,7 @@ class Textbook(Base):
     title = Column(String(150), nullable=False)
     author = Column(String(100))
     publisher = Column(String(100))
+    edition = Column(String(100), nullable=True)
 
     course_id = Column(Integer, ForeignKey("course.course_id"),unique=True)
     # The Relationship Link
@@ -203,11 +204,12 @@ class FolderItem(Base):
     __tablename__ = "folder_items"
     item_id = Column(Integer, primary_key=True, index=True)
     folder_id = Column(Integer, ForeignKey("folders.folder_id"))
-    item_type = Column(String(20)) # e.g., 'video', 'assignment', 'notes'
+    item_type = Column(String(20)) # e.g., 'video', 'assignment', 'notes', 'textbook'
 
     # Foreign Keys to your existing specialized tables
     video_id = Column(Integer, ForeignKey("video.video_id"), nullable=True)
     notes_id = Column(Integer, ForeignKey("notes.notes_id"), nullable=True)
     assignment_id = Column(Integer, ForeignKey("assignment.assignment_id"), nullable=True)
+    # textbook_id = Column(Integer, ForeignKey("textbook.textbook_id"), nullable=True)
 
     folder = relationship("Folder", back_populates="items")

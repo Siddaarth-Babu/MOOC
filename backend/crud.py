@@ -278,6 +278,42 @@ def remove_videos(db: Session, vid_id: int):
 
     return False
 
+""" Fetch individual content operations (for students to view) """
+
+def get_video_by_id(db: Session, video_id: int):
+    """Fetch a specific video by ID"""
+    return db.query(models.Video).filter(models.Video.video_id == video_id).first()
+
+def get_notes_by_id(db: Session, notes_id: int):
+    """Fetch a specific notes document by ID"""
+    return db.query(models.Notes).filter(models.Notes.notes_id == notes_id).first()
+
+def get_textbook_by_id(db: Session, textbook_id: int):
+    """Fetch a specific textbook by ID"""
+    return db.query(models.Textbook).filter(models.Textbook.textbook_id == textbook_id).first()
+
+# New CRUD functions that take item_id and fetch the actual content
+def get_video_by_item_id(db: Session, item_id: int):
+    """Fetch video content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.video_id:
+        return None
+    return db.query(models.Video).filter(models.Video.video_id == item.video_id).first()
+
+def get_notes_by_item_id(db: Session, item_id: int):
+    """Fetch notes content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.notes_id:
+        return None
+    return db.query(models.Notes).filter(models.Notes.notes_id == item.notes_id).first()
+
+def get_textbook_by_item_id(db: Session, item_id: int):
+    """Fetch textbook content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.textbook_id:
+        return None
+    return db.query(models.Textbook).filter(models.Textbook.textbook_id == item.textbook_id).first()
+
 """ Student CRUD operations """
 
 def create_student(db: Session, student: schemas.StudentCreate):

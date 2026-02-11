@@ -2200,6 +2200,72 @@ def get_folder_contents(
         raise HTTPException(status_code=404, detail="Folder not found")
 
     return folder
+
+
+""" Content Fetch Routes (for students to view content) """
+
+@app.get("/content/video/{item_id}", response_model=schemas.Video)
+def get_video_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch video content by folder item ID.
+    Resolves item_id -> video_id -> returns video details with url_link.
+    """
+    print(f"🎥 Fetching video content for item ID: {item_id}")
+    video = crud.get_video_by_item_id(db, item_id)
+    print(f"🎥 Video found: {video}")
+    
+    if not video:
+        print(f"🎥 Video for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Video not found for this item")
+    
+    return video
+
+
+@app.get("/content/notes/{item_id}", response_model=schemas.Notes)
+def get_notes_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch notes content by folder item ID.
+    Resolves item_id -> notes_id -> returns notes details with url_link.
+    """
+    print(f"📄 Fetching notes content for item ID: {item_id}")
+    notes = crud.get_notes_by_item_id(db, item_id)
+    print(f"📄 Notes found: {notes}")
+    
+    if not notes:
+        print(f"📄 Notes for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Notes not found for this item")
+    
+    return notes
+
+
+@app.get("/content/book/{item_id}", response_model=schemas.Textbook)
+def get_textbook_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch textbook content by folder item ID.
+    Resolves item_id -> textbook_id -> returns textbook details.
+    """
+    print(f"📚 Fetching textbook content for item ID: {item_id}")
+    textbook = crud.get_textbook_by_item_id(db, item_id)
+    print(f"📚 Textbook found: {textbook}")
+    
+    if not textbook:
+        print(f"📚 Textbook for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Textbook not found for this item")
+    
+    # Ensure edition is present (for backward compatibility)
+    if not hasattr(textbook, 'edition') or textbook.edition is None:
+        textbook.edition = "N/A"
+    
+    return textbook
     
 @app.get("/admin/users")
 def admin_users(
