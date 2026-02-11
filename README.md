@@ -114,6 +114,9 @@ This project implements a decoupled full-stack architecture to create a dynamic 
 2.  Install dependencies:
     ```bash
     npm install
+    
+    # Or install specific packages manually:
+    npm install react-router-dom react-youtube uniqid quill humanize-duration rc-progress react-simple-star-rating axios
     ```
 
 3.  Run the development server:
