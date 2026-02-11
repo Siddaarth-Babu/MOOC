@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 # Load the variables from .env into the system
-load_dotenv(r"E:\Online Course Management Platform\MOOC\backend\.env")
+load_dotenv(r"C:\Users\tinku\OneDrive\Desktop\DBMS Project\MOOC\backend\.env")
 from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 from backend import schemas,models,crud
