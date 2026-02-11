@@ -10,6 +10,7 @@ const CoursePage = ({ courseData }) => {
   // Course data
   const [course, setCourse] = useState(null)
   const [folders, setFolders] = useState([])
+  const [evaluation, setEvaluation] = useState(null)
   const [activeTab, setActiveTab] = useState('content')
   const [expandedFolders, setExpandedFolders] = useState({})
   const [expandedSubfolders, setExpandedSubfolders] = useState({})
@@ -30,6 +31,7 @@ const CoursePage = ({ courseData }) => {
       setCourse({ id, name: courseData.course?.name || courseData.course_name || courseData.name })
       if (id) {
         fetchFolders(id)
+        fetchEvaluation(id)
       }
     }
   }, [courseData])
@@ -48,6 +50,37 @@ const CoursePage = ({ courseData }) => {
       setFolders(data || [])
     } catch (err) {
       console.error('Error fetching folders:', err)
+    }
+  }
+
+  // Fetch evaluation from backend
+  const fetchEvaluation = async (cId) => {
+    try {
+      console.log('Fetching evaluation for course:', cId)
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        console.error('No access token found')
+        return
+      }
+
+      const res = await fetch(`http://localhost:8000/student/courses/${cId}/evaluation`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        console.error(`Failed to fetch evaluation: ${res.status}`)
+        return
+      }
+
+      const data = await res.json()
+      console.log('Evaluation fetched:', data)
+      setEvaluation(data)
+    } catch (err) {
+      console.error('Error fetching evaluation:', err)
     }
   }
 
@@ -426,47 +459,26 @@ const CoursePage = ({ courseData }) => {
           {activeTab === 'grades' && (
             <div className="tab-panel">
               <div className="grades-content">
-                {courseData && courseData.grades ? (
-                  <>
-                    <table className="grades-table">
-                      <thead>
-                        <tr>
-                          <th>Assignment/Assessment</th>
-                          <th>Score</th>
-                          <th>Max Score</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {courseData.grades.items && courseData.grades.items.length > 0 ? (
-                          courseData.grades.items.map((item) => (
-                            <tr key={item.id}>
-                              <td>{item.name}</td>
-                              <td>{item.score !== null ? item.score : '-'}</td>
-                              <td>{item.maxScore}</td>
-                              <td>{item.status}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="4" style={{ textAlign: 'center' }}>
-                              No grades available yet
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                    <div className="overall-grade">
-                      <h3>Overall Grade</h3>
-                      <p className="grade-value">
-                        {courseData.grades.overall !== null
-                          ? `${courseData.grades.overall}%`
-                          : 'Not calculated yet'}
-                      </p>
+                {evaluation ? (
+                  <div className="overall-grade" style={{ padding: '2rem', background: '#f5f5f5', borderRadius: '8px', maxWidth: '600px' }}>
+                    <h3 style={{ marginTop: 0, color: '#333' }}>📊 Course Evaluation</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ color: '#999', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Total Marks</p>
+                        <p style={{ fontSize: '3rem', fontWeight: 'bold', margin: 0, color: '#333' }}>
+                          {evaluation.marks}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ color: '#999', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Grade</p>
+                        <p style={{ fontSize: '3rem', fontWeight: 'bold', margin: 0, color: '#3498db' }}>
+                          {evaluation.grade}
+                        </p>
+                      </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <p>No grades available yet</p>
+                  <p style={{ color: '#999', fontSize: '1rem' }}>No evaluation data available yet</p>
                 )}
               </div>
             </div>

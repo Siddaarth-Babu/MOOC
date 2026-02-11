@@ -314,6 +314,58 @@ def get_textbook_by_item_id(db: Session, item_id: int):
         return None
     return db.query(models.Textbook).filter(models.Textbook.textbook_id == item.textbook_id).first()
 
+""" Grades and Evaluation CRUD operations """
+
+def get_student_course_grades(db: Session, student_id: int, course_id: int):
+    """Fetch all assignments and submission details for a student in a course"""
+    try:
+        # Get all assignments for the course
+        assignments = db.query(models.Assignment).filter(
+            models.Assignment.course_id == course_id
+        ).all()
+        
+        result = []
+        for assignment in assignments:
+            # Get submission for this assignment by this student
+            submission = db.query(models.StudentSubmission).filter(
+                models.StudentSubmission.assignment_id == assignment.assignment_id,
+                models.StudentSubmission.student_id == student_id
+            ).first()
+            
+            assignment_data = {
+                'assignment_id': assignment.assignment_id,
+                'title': assignment.title,
+                'description': assignment.description,
+                'marks': assignment.marks,
+                'due_date': assignment.due_date,
+                'obtained_marks': submission.obtained_marks if submission else None,
+                'submission_url': submission.submission_url if submission else None,
+                'status': submission.status if submission else "Not Submitted",
+                'submitted_at': submission.submitted_at if submission else None
+            }
+            result.append(assignment_data)
+        
+        return result
+    except Exception as e:
+        print(f"Error fetching student grades: {e}")
+        return []
+
+def get_student_overall_evaluation(db: Session, student_id: int, course_id: int):
+    """Fetch overall evaluation/grade for a student in a course"""
+    try:
+        evaluation = db.query(models.Evaluation).filter(
+            models.Evaluation.student_id == student_id,
+            models.Evaluation.course_id == course_id
+        ).first()
+        
+        if not evaluation:
+            return None
+        
+        return evaluation
+    except Exception as e:
+        print(f"Error fetching overall evaluation: {e}")
+        return None
+
 """ Student CRUD operations """
 
 def create_student(db: Session, student: schemas.StudentCreate):

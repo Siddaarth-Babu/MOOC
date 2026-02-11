@@ -278,6 +278,15 @@ class GradeUpdate(BaseModel):
     grade: str
     pass_fail: str
 
+""" Schema for Evaluation (Student Course Grade) """
+class EvaluationSchema(BaseModel):
+    evaluation_id: int
+    marks: int
+    grade: str
+    pass_fail: str
+    date_of_evaluation: date
+    class Config:
+        from_attributes = True
 
 class SubmissionBase(BaseModel):
     submission_url: str # Or HttpUrl for stricter validation

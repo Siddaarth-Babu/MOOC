@@ -302,6 +302,7 @@ def get_student_enrollment_course_view(
         return []
     return folders
 
+
 @app.post("/student/courses/{course_id}/enroll")
 def enroll_student(
     course_id: int,
@@ -346,6 +347,77 @@ def hand_assignment(
     student: models.Student = Depends(get_curr_student)
 ):
     return crud.create_submission(db,subm,student.student_id)
+
+@app.get("/student/courses/{course_id}/evaluation", response_model=schemas.EvaluationSchema)
+def get_course_evaluation(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Fetch student's overall evaluation for a course.
+    Returns marks, grade, pass_fail status, and evaluation date.
+    """
+    try:
+        # Verify student is enrolled in this course
+        enrolled_courses = crud.get_student_courses(db, student.student_id)
+        course_ids = [c.course_id for c in enrolled_courses]
+        
+        if course_id not in course_ids:
+            raise HTTPException(status_code=403, detail="Not enrolled in this course")
+        
+        # Get overall evaluation
+        evaluation = crud.get_student_overall_evaluation(db, student.student_id, course_id)
+        
+        if not evaluation:
+            raise HTTPException(status_code=404, detail="No evaluation found for this student in this course")
+        
+        print(f"📊 Fetching evaluation for student {student.student_id} in course {course_id}")
+        print(f"📊 Evaluation: marks={evaluation.marks}, grade={evaluation.grade}")
+        
+        return evaluation
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching evaluation: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching evaluation: {str(e)}")
+
+@app.get("/student/profile", response_model=schemas.Student)
+def view_profile(
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Returns the profile of the logged-in student based on their JWT.
+    """
+    return student
+
+@app.patch("/student/profile/update", response_model=schemas.Student)
+def update_profile(
+    profile_data: schemas.StudentUpdate, 
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Updates only the fields provided in the request body.
+    """
+    # Convert input to dict, skipping anything React didn't send
+    update_dict = profile_data.model_dump(exclude_unset=True)
+
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+
+    for key, value in update_dict.items():
+        setattr(student, key, value)
+
+    try:
+        db.commit()
+        db.refresh(student)
+        return student
+    except Exception as e:
+        db.rollback()
+        # This usually happens if they try to change to an email already in use
+        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 
 @app.get("/student/profile/{student_id}", response_model=schemas.Student)
 def get_student_profile(
