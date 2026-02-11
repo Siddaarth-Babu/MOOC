@@ -114,7 +114,7 @@ class University(UniversityBase):
 
 """ Schema for Program """
 class ProgramBase(BaseModel):
-    program_name: str
+    program_type: str
 
 class ProgramCreate(ProgramBase):
     pass
@@ -285,4 +285,5 @@ class CourseCreateWithInstructors(BaseModel):
     skill_level: str
     course_fees: int
     program_type: str
+    institute_name: str
     instructor_emails: List[EmailStr]

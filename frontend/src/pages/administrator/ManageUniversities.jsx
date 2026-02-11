@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import Navbar from '../../components/administrator/Navbar'
+import Footer from '../../components/administrator/Footer'
 
 const ManageUniversities = () => {
   const [universities, setUniversities] = useState([])
@@ -66,41 +68,45 @@ const ManageUniversities = () => {
   }
 
   return (
-    <div className="admin-manage-universities container">
-      <h2>Manage Universities</h2>
-      {error && <div className="alert alert-error">{error}</div>}
+    <div>
+      <Navbar />
+      <div className="admin-manage-universities container">
+        <h2>Manage Universities</h2>
+        {error && <div className="alert alert-error">{error}</div>}
 
-      <form className="admin-form" onSubmit={handleCreate}>
-        <div className="form-row-2">
-          <input className="form-input" placeholder="University name" value={name} onChange={e => setName(e.target.value)} required />
-          <input className="form-input" placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
-        </div>
-        <div style={{marginTop:8}}>
-          <input className="form-input" placeholder="Country" value={country} onChange={e => setCountry(e.target.value)} />
-        </div>
-        <div style={{marginTop:8}}>
-          <button className="auth-submit-btn" type="submit">Add University</button>
-        </div>
-      </form>
+        <form className="admin-form" onSubmit={handleCreate}>
+          <div className="form-row-2">
+            <input className="form-input" placeholder="University name" value={name} onChange={e => setName(e.target.value)} required />
+            <input className="form-input" placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
+          </div>
+          <div style={{marginTop:8}}>
+            <input className="form-input" placeholder="Country" value={country} onChange={e => setCountry(e.target.value)} />
+          </div>
+          <div style={{marginTop:8}}>
+            <button className="auth-submit-btn" type="submit">Add University</button>
+          </div>
+        </form>
 
-      <section style={{marginTop:20}}>
-        <h3>Existing Universities</h3>
-        {loading ? <p className="muted">Loading…</p> : (
-          <ul className="admin-univ-list">
-            {universities.map(u => (
-              <li key={u.institute_id} className="admin-univ-item">
-                <div>
-                  <strong>{u.name}</strong>
-                  <div className="muted">{u.city}, {u.country}</div>
-                </div>
-                <div>
-                  <button className="btn" onClick={() => handleDelete(u.institute_id)}>Delete</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <section style={{marginTop:20}}>
+          <h3>Existing Universities</h3>
+          {loading ? <p className="muted">Loading…</p> : (
+            <ul className="admin-univ-list">
+              {universities.map(u => (
+                <li key={u.institute_id} className="admin-univ-item">
+                  <div>
+                    <strong>{u.name}</strong>
+                    <div className="muted">{u.city}, {u.country}</div>
+                  </div>
+                  <div>
+                    <button className="btn" onClick={() => handleDelete(u.institute_id)}>Delete</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+      <Footer />
     </div>
   )
 }

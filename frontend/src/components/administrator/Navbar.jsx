@@ -27,6 +27,7 @@ const Navbar = () => {
           <Link to="/admin" className="admin-link">Home</Link>
           <Link to="/admin/manage-users" className="admin-link">Manage Users</Link>
           <Link to="/admin/manage-courses" className="admin-link">Manage Courses</Link>
+          <Link to="/admin/manage-universities" className="admin-link">Manage Universities</Link>
         </div>
 
         <div className="admin-nav-right">
