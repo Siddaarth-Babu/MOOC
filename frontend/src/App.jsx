@@ -48,7 +48,7 @@ const App = () => {
         <Route path="/admin/manage-users" element={<ManageUsers />} />
         <Route path="/admin/manage-courses" element={<ManageCoursesAdmin />} />
         <Route path="/admin/manage-universities" element={<ManageUniversities />} />
-        <Route path="/admin/profile" element={<ProfileAdmin />} />
+        <Route path="/admin/profile/:adminId" element={<ProfileAdmin />} />
 
         <Route path="/courses" element={<CourseCard />} />
         <Route path="/student/enrollments/:id" element={<CourseDetails />} />
@@ -63,7 +63,7 @@ const App = () => {
         <Route path="/instructor/profile/:instructorId" element={<ProfileInstructor />} />
 
         <Route path="/analyst" element={<Dashboard2 />} />
-        <Route path="/analyst/profile" element={<ProfileAnalyst />} />
+        <Route path="/analyst/profile/:analystId" element={<ProfileAnalyst />} />
       </Routes>
     </div>
   )

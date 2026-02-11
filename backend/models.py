@@ -124,6 +124,7 @@ class SystemAdmin(Base):
     admin_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))
     email_id = Column(String(100), unique=True)
+    dob = Column(Date, nullable=True)
 
 class Topic(Base):
     __tablename__ = "topic"
@@ -146,6 +147,7 @@ class DataAnalyst(Base):
     analyst_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     email_id = Column(String(100), unique=True, index=True, nullable=False)
+    dob = Column(Date, nullable=True)
 
 class Evaluation(Base):
     __tablename__ = "evaluation"

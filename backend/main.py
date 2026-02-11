@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 # Load the variables from .env into the system
-load_dotenv(r"C:\Users\tinku\OneDrive\Desktop\DBMS Project\MOOC\backend\.env")
+load_dotenv(r"E:\Online Course Management Platform\MOOC\backend\.env")
 from fastapi import FastAPI,HTTPException,Depends, status
 from passlib.context import CryptContext
 from backend import schemas,models,crud
@@ -732,6 +732,10 @@ def get_advanced_stats(
 
     # Format for React
     return {
+        "analyst": {
+            "name": analyst.name,
+            "email": analyst.email_id
+        },
         "summary": {
             "total_revenue": total_revenue,
             "total_enrollments": db.query(models.course_student_link).count(),
@@ -742,6 +746,23 @@ def get_advanced_stats(
             "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
         }
     }
+
+# Current Admin/Analyst Profile Endpoints (for getting own profile without knowing ID)
+@app.get("/admin/me", response_model=schemas.SystemAdmin)
+def get_current_admin(
+    db: Session = Depends(get_db),
+    current_admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    """Returns the current admin's profile"""
+    return current_admin
+
+@app.get("/analyst/me", response_model=schemas.DataAnalyst)
+def get_current_analyst(
+    db: Session = Depends(get_db),
+    current_analyst: models.DataAnalyst = Depends(get_curr_analyst)
+):
+    """Returns the current analyst's profile"""
+    return current_analyst
 
 @app.get("/admin/courses")
 def admin_courses(
@@ -793,6 +814,89 @@ def admin_home(
         "no_of_universities": no_of_universities,
         "no_of_admins": no_of_admins
     }
+
+@app.get("/admin/profile/{admin_id}", response_model=schemas.SystemAdmin)
+def get_admin_profile(
+    admin_id: int,
+    db: Session = Depends(get_db),
+    current_admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    if current_admin.admin_id != admin_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    admin = db.query(models.SystemAdmin).filter(
+        models.SystemAdmin.admin_id == admin_id
+    ).first()
+
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    return admin
+
+@app.patch("/admin/profile/{admin_id}", response_model=schemas.SystemAdmin)
+def update_admin_profile(
+    admin_id: int,
+    profile_data: schemas.SystemAdminUpdate,
+    db: Session = Depends(get_db),
+    current_admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    if current_admin.admin_id != admin_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    admin = db.query(models.SystemAdmin).filter(
+        models.SystemAdmin.admin_id == admin_id
+    ).first()
+
+    update_dict = profile_data.model_dump(exclude_unset=True)
+
+    for key, value in update_dict.items():
+        setattr(admin, key, value)
+
+    db.commit()
+    db.refresh(admin)
+    return admin
+
+@app.get("/analyst/profile/{analyst_id}", response_model=schemas.DataAnalyst)
+def get_analyst_profile(
+    analyst_id: int,
+    db: Session = Depends(get_db),
+    current_analyst: models.DataAnalyst = Depends(get_curr_analyst)
+):
+    if current_analyst.analyst_id != analyst_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    analyst = db.query(models.DataAnalyst).filter(
+        models.DataAnalyst.analyst_id == analyst_id
+    ).first()
+
+    if not analyst:
+        raise HTTPException(status_code=404, detail="Analyst not found")
+
+    return analyst
+
+@app.patch("/analyst/profile/{analyst_id}", response_model=schemas.DataAnalyst)
+def update_analyst_profile(
+    analyst_id: int,
+    profile_data: schemas.DataAnalystUpdate,
+    db: Session = Depends(get_db),
+    current_analyst: models.DataAnalyst = Depends(get_curr_analyst)
+):
+    if current_analyst.analyst_id != analyst_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    analyst = db.query(models.DataAnalyst).filter(
+        models.DataAnalyst.analyst_id == analyst_id
+    ).first()
+
+    update_dict = profile_data.model_dump(exclude_unset=True)
+
+    for key, value in update_dict.items():
+        setattr(analyst, key, value)
+
+    db.commit()
+    db.refresh(analyst)
+    return analyst
+
 
 @app.get("/admin/users")
 def admin_users(

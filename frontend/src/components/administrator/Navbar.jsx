@@ -12,6 +12,7 @@ const Navbar = () => {
       return null
     }
   })()
+  const adminId = localStorage.getItem('admin_id')
 
   const handleLogout = () => {
     localStorage.removeItem('user')
@@ -35,7 +36,7 @@ const Navbar = () => {
           {open && (
             <div className="admin-profile-dropdown">
               <div className="admin-profile-name">{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email || 'Admin'}</div>
-              <button className="admin-dropdown-item" onClick={() => { setOpen(false); navigate('/admin/profile') }}>Profile</button>
+              <button className="admin-dropdown-item" onClick={() => { if (adminId) { setOpen(false); navigate(`/admin/profile/${adminId}`) } else { alert('Admin ID not found. Please login again.') } }}>Profile</button>
               <button className="admin-dropdown-item admin-logout" onClick={handleLogout}>Logout</button>
             </div>
           )}

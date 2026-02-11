@@ -12,6 +12,7 @@ const Navbar = () => {
       return null
     }
   })()
+  const analystId = localStorage.getItem('analyst_id')
 
   const handleLogout = () => {
     localStorage.removeItem('user')
@@ -25,7 +26,6 @@ const Navbar = () => {
         <div className="analyst-nav-left">
           <Link to="/analyst" className="analyst-logo">MOOC Analytics</Link>
           <Link to="/analyst" className="analyst-link">Home</Link>
-          <Link to="/analyst/analytics" className="analyst-link">Analytics</Link>
         </div>
 
         <div className="analyst-nav-right">
@@ -33,7 +33,7 @@ const Navbar = () => {
           {open && (
             <div className="analyst-profile-dropdown">
               <div className="analyst-profile-name">{user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email || 'Analyst'}</div>
-              <button className="analyst-dropdown-item" onClick={() => { setOpen(false); navigate('/analyst/profile') }}>Profile</button>
+              <button className="analyst-dropdown-item" onClick={() => { if (analystId) { setOpen(false); navigate(`/analyst/profile/${analystId}`) } else { alert('Analyst ID not found. Please login again.') } }}>Profile</button>
               <button className="analyst-dropdown-item analyst-logout" onClick={handleLogout}>Logout</button>
             </div>
           )}

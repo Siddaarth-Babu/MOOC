@@ -14,7 +14,7 @@ const Login = () => {
     setError('')
     
     try {
-      // TODO: Connect to actual API endpoint
+      // 1. Login to get token
       const response = await fetch('http://127.0.0.1:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,53 +24,54 @@ const Login = () => {
       if (!response.ok) throw new Error('Login failed')
       const data = await response.json()
       const { access_token, role } = data
-      // Store token and redirect
-        // const fakeResponse = {
-        //     role: 'student',
-        //     user: {
-        //         id: 1,
-        //         name: 'Demo Student',
-        //         email: email,
-        //         firstName: 'Demo'
-        //     }
-        // }
+      
+      // Store token and role
+      localStorage.setItem('access_token', access_token)
+      localStorage.setItem('role', role)
 
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('role', role)
+      // 2. Fetch user profile based on role to get their ID
+      let profileUrl = ''
+      if (role === 'admin') {
+        profileUrl = 'http://127.0.0.1:8000/admin/me'
+      } else if (role === 'analyst') {
+        profileUrl = 'http://127.0.0.1:8000/analyst/me'
+      }
 
-        if(role === 'student') {
-            navigate('/student')
-        } else if(role === 'instructor') {
-            navigate('/instructor')
-        } else if(role === 'admin') {
-            navigate('/admin')
-        } else if(role === 'analyst') {
-            navigate('/analyst')
+      if (profileUrl) {
+        try {
+          const profileRes = await fetch(profileUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          if (profileRes.ok) {
+            const profileData = await profileRes.json()
+            if (role === 'admin' && profileData.admin_id) {
+              localStorage.setItem('admin_id', profileData.admin_id)
+            } else if (role === 'analyst' && profileData.analyst_id) {
+              localStorage.setItem('analyst_id', profileData.analyst_id)
+            }
+          }
+        } catch (err) {
+          console.warn('Could not fetch user profile:', err)
+          // Continue anyway, profile pages will handle missing ID
         }
-        // const response = await fetch("http://127.0.0.1:8000/auth/login", {
-        //   method: "POST",
-        //   headers: { "Content-Type": "application/json" },
-        //   body: JSON.stringify({ email, password })
-        // })
+      }
 
-        // if (!response.ok) throw new Error("Invalid credentials")
-
-        // const data = await response.json()
-        // const { role, user } = data
-
-        // // ROLE BASED NAVIGATION
-        // if (role === "student") {
-        //   navigate("/student", { state: { user } })
-        // } else if (role === "instructor") {
-        //   navigate("/instructor", { state: { user } })
-        // } else if (role === "administrator") {
-        //   navigate("/admin", { state: { user } })
-        // }
-      console.log('Login attempt:', { email, password })
-      // Simulate success after 1s
-      setTimeout(() => {
-        setLoading(false)
-      }, 1000)
+      // 3. Navigate based on role
+      if(role === 'student') {
+          navigate('/student')
+      } else if(role === 'instructor') {
+          navigate('/instructor')
+      } else if(role === 'admin') {
+          navigate('/admin')
+      } else if(role === 'analyst') {
+          navigate('/analyst')
+      }
+      
+      setLoading(false)
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.')
       setLoading(false)

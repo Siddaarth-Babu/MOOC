@@ -190,9 +190,16 @@ class SystemAdminCreate(SystemAdminBase):
 
 class SystemAdmin(SystemAdminBase):
     admin_id: int
+    dob: Optional[date] = None
 
     class Config:
         from_attributes = True
+
+class SystemAdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+    dob: Optional[date] = None
+
 
 """ Schema for Data Analyst """
 class DataAnalystBase(BaseModel):
@@ -204,9 +211,16 @@ class DataAnalystCreate(DataAnalystBase):
 
 class DataAnalyst(DataAnalystBase):
     analyst_id: int
+    dob: Optional[date] = None
 
     class Config:
         from_attributes = True
+
+class DataAnalystUpdate(BaseModel):
+    name: Optional[str] = None
+    email_id: Optional[EmailStr] = None
+    dob: Optional[date] = None
+
 
 """ Schema for Assignment """
 class AssignmentBase(BaseModel):
