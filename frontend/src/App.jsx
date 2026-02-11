@@ -30,6 +30,7 @@ import ProfileInstructor from './pages/instructor/Profile.jsx'
 
 
 import Dashboard2 from './pages/data_analyst/Dashboard'
+import ProfileAnalyst from './pages/data_analyst/Profile.jsx'
 
 
 const App = () => {
