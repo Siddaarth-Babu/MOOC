@@ -1453,6 +1453,63 @@ def admin_remove_instructor_from_course(
         raise HTTPException(status_code=500, detail="Failed to remove instructor from course")
 
 
+@app.get("/admin/course/{course_id}/control", response_model=schemas.CourseControlResponse)
+def admin_course_control_view(
+    course_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    instructors = crud.get_course_instructors(db, course_id)
+    students = crud.get_course_students(db, course_id)
+
+    return {
+        "course_name": course.course_name,
+        "course_id": course.course_id,
+        "instructors": [{"name": i.name, "id": i.instructor_id, "email": i.email_id} for i in instructors],
+        "students": [{"name": s.name, "id": s.student_id, "email": s.email_id} for s in students],
+    }
+
+
+@app.delete("/admin/course/{course_id}/student/{student_id}")
+def admin_deregister_student_from_course(
+    course_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    admin: models.SystemAdmin = Depends(get_curr_admin)
+):
+    # Ensure course exists
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Ensure student exists
+    student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    link = db.execute(models.course_student_link.select().where(
+        (models.course_student_link.c.course_id == course_id) &
+        (models.course_student_link.c.student_id == student_id)
+    )).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="Student not registered in this course")
+
+    try:
+        db.execute(models.course_student_link.delete().where(
+            (models.course_student_link.c.course_id == course_id) &
+            (models.course_student_link.c.student_id == student_id)
+        ))
+        db.commit()
+        return {"message": "Student deregistered from course"}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to deregister student from course")
+
+
 @app.post("/admin/student/{student_id}")  
 def admin_update_student(
     student_id: int,
@@ -1936,3 +1993,4 @@ def get_advanced_stats(
             "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
         }
     }
+

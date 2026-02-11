@@ -13,6 +13,7 @@ import ManageUsers from './pages/administrator/users/ManageUsers.jsx'
 import ManageCoursesAdmin from './pages/administrator/ManageCourses.jsx'
 import ManageUniversities from './pages/administrator/ManageUniversities.jsx'
 import ProfileAdmin from './pages/administrator/Profile.jsx'
+import CourseControlPage from './components/administrator/CourseControlPage.jsx'
 
 
 import CourseDetails from './pages/student/CourseDetails.jsx'
@@ -28,8 +29,8 @@ import MyTeaching from './pages/instructor/MyTeaching.jsx'
 import ProfileInstructor from './pages/instructor/Profile.jsx'
 
 
-import Dashboard2 from './pages/data_analyst/Dashboard.jsx'
-import ProfileAnalyst from './pages/data_analyst/Profile.jsx'
+import Dashboard2 from './pages/data_analyst/Dashboard'
+
 
 const App = () => {
   return (
@@ -47,6 +48,7 @@ const App = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/manage-users" element={<ManageUsers />} />
         <Route path="/admin/manage-courses" element={<ManageCoursesAdmin />} />
+        <Route path="/admin/course-control/:courseId" element={<CourseControlPage />} />
         <Route path="/admin/manage-universities" element={<ManageUniversities />} />
         <Route path="/admin/profile/:adminId" element={<ProfileAdmin />} />
 

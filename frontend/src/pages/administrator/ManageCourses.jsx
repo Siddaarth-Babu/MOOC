@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/administrator/Navbar'
 import Footer from '../../components/administrator/Footer'
 
@@ -7,6 +8,7 @@ const ManageCourses = () => {
   const [instructors, setInstructors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   // Form state
   const [courseName, setCourseName] = useState('')
@@ -179,6 +181,15 @@ const ManageCourses = () => {
                     <div className="muted">ID: {id}</div>
                   </div>
                   <div style={{display:'flex',gap:8}}>
+                    <button
+                      type="button"
+                      className="course-control-launch-btn"
+                      title="Course control (deassign / deregister)"
+                      aria-label="Course control"
+                      onClick={() => navigate(`/admin/course-control/${id}`)}
+                    >
+                      <span className="course-control-launch-btn__inner" />
+                    </button>
                     <select onChange={(e) => handleAssign(id, e.target.value)} defaultValue="">
                       <option value="">Assign instructor</option>
                       {instructors.map(ins => <option key={ins.instructor_id} value={ins.email_id}>{ins.name} ({ins.email_id})</option>)}

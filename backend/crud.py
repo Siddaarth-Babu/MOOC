@@ -52,12 +52,32 @@ def get_student_courses(db: Session, student_id: int):
         models.course_student_link.c.student_id == student_id
     ).all()
 
-def get_course_instructors(db:Session, course_id:int):
+# def get_course_instructors(db:Session, course_id:int):
+#     return db.query(models.Instructor).join(
+#         models.course_instructor_link,
+#         models.Instructor.instructor_id == models.course_instructor_link.c.instructor_id
+#     ).filter(
+#         models.course_instructor_link.course_id == course_id
+#     ).all()
+def get_course_instructors(db: Session, course_id: int):
+    """
+    Return Instructor rows for a given course_id.
+    Note: when referencing columns on a Table object use the .c namespace.
+    """
     return db.query(models.Instructor).join(
         models.course_instructor_link,
         models.Instructor.instructor_id == models.course_instructor_link.c.instructor_id
     ).filter(
-        models.course_instructor_link.course_id == course_id
+        models.course_instructor_link.c.course_id == course_id
+    ).all()
+
+
+def get_course_students(db: Session, course_id: int):
+    return db.query(models.Student).join(
+        models.course_student_link,
+        models.Student.student_id == models.course_student_link.c.student_id
+    ).filter(
+        models.course_student_link.c.course_id == course_id
     ).all()
 
 def get_course_topics(db:Session, course_id:int):
@@ -404,3 +424,4 @@ def delete_assignment(db: Session, assignment_id: int):
         return True
     
     return False
+
