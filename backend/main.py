@@ -313,40 +313,6 @@ def enroll_student(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    student_courses = crud.get_student_courses(db, student.student_id)
-    enrolled_ids = [c.course_id for c in student_courses]
-    is_enrolled = course_id in enrolled_ids
-
-    if not is_enrolled:
-        # Return only public info
-        return {
-            "enrolled": False,
-            "title": course.course_name,
-            "duration": course.duration,
-            "instructor": crud.get_course_instructors(db,course.course_id),
-            "fees": course.course_fees,
-            "skill-level": course.skill_level,
-            "topics": crud.get_course_topics(db,course.course_id),
-            "institute": db.query(models.University).filter(models.University.institute_id == course.institute_id).first()
-        }
-
-    # If enrolled, return EVERYTHING
-    return {
-        "enrolled": True,
-        "details": course, # Includes assignments, assessments, etc.
-    }
-
-@app.post("/student/courses/{course_id}/enroll")
-def enroll_student(
-    course_id: int,
-    db: Session = Depends(get_db),
-    student: models.Student = Depends(get_curr_student)
-):
-    # 1. Check if the course even exists
-    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
-
     # 2. Check if the student is ALREADY enrolled
     is_already_enrolled = db.query(models.course_student_link).filter(
         models.course_student_link.c.course_id == course_id,
@@ -380,43 +346,6 @@ def hand_assignment(
     student: models.Student = Depends(get_curr_student)
 ):
     return crud.create_submission(db,subm,student.student_id)
-
-@app.get("/student/profile", response_model=schemas.Student)
-def view_profile(
-    db: Session = Depends(get_db),
-    student: models.Student = Depends(get_curr_student)
-):
-    """
-    Returns the profile of the logged-in student based on their JWT.
-    """
-    return student
-
-@app.patch("/student/profile/update", response_model=schemas.Student)
-def update_profile(
-    profile_data: schemas.StudentUpdate, 
-    db: Session = Depends(get_db),
-    student: models.Student = Depends(get_curr_student)
-):
-    """
-    Updates only the fields provided in the request body.
-    """
-    # Convert input to dict, skipping anything React didn't send
-    update_dict = profile_data.model_dump(exclude_unset=True)
-
-    if not update_dict:
-        raise HTTPException(status_code=400, detail="No data provided for update")
-
-    for key, value in update_dict.items():
-        setattr(student, key, value)
-
-    try:
-        db.commit()
-        db.refresh(student)
-        return student
-    except Exception as e:
-        db.rollback()
-        # This usually happens if they try to change to an email already in use
-        raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 
 @app.get("/student/profile/{student_id}", response_model=schemas.Student)
 def get_student_profile(

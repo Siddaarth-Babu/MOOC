@@ -288,7 +288,7 @@ const ManageUsers = () => {
             <option value="all">All</option>
             <option value="student">Students</option>
             <option value="instructor">Instructors</option>
-            <option value="data_analyst">Data Analysts</option>
+            <option value="analyst">Data Analysts</option>
             <option value="admin">Admins</option>
           </select>
           <input
