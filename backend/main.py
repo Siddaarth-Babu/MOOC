@@ -7,13 +7,14 @@ from passlib.context import CryptContext
 from backend import schemas,models,crud
 # import schemas,models
 from sqlalchemy.orm import Session
-from sqlalchemy import func, insert
+from sqlalchemy import func,insert
 from backend.database import get_db
 from datetime import datetime, timedelta,timezone,date
 from jose import jwt, JWTError
 from backend.security import get_curr_student, get_curr_instructor,get_curr_analyst,get_curr_admin
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
+from typing import List
 
 app = FastAPI()
 
@@ -223,24 +224,97 @@ def student_home(
     student: models.Student = Depends(get_curr_student), # Returns Student model
     db: Session = Depends(get_db)
     ):
+    """
+    Returns list of enrolled courses with complete details.
+    Each course includes instructor info, description, and standard folder structure.
+    """
+    courses = crud.get_student_courses(db, student.student_id)
+    
+    course_list = []
+    for course in courses:
+        # Get instructor names for this course
+        instructors = crud.get_course_instructors(db, course.course_id)
+        instructor_names = ', '.join([i.name for i in instructors]) if instructors else 'TBA'
+        
+        course_data = {
+            'course_id': course.course_id,
+            'course_name': course.course_name,
+            # 'course_description': course.course_description or 'No description available',
+            'duration': course.duration,
+            'skill_level': course.skill_level,
+            'course_fees': course.course_fees,
+            'instructor_name': instructor_names
+        }
+        course_list.append(course_data)
     
     return {
         "student_name": student.name,
-        "my_list": crud.get_student_courses(db,student.student_id) 
+        "my_list": course_list
     }
 
 
-@app.get("/student/courses/{course_id}")
-def get_student_course_view(
+@app.get("/student/{course_id}", response_model=List[schemas.FolderSchema])
+def get_student_enrollment_course_structure(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    """
+    Returns the nested tree of folders and subfolders for a course in student enrollments.
+    Includes standard folders: General, Materials, Assignments, Assessments.
+    """
+    # Verify student is enrolled in this course
+    enrolled_courses = crud.get_student_courses(db, student.student_id)
+    course_ids = [c.course_id for c in enrolled_courses]
+    
+    if course_id not in course_ids:
+        raise HTTPException(status_code=403, detail="Not enrolled in this course")
+    
+    # Ensure standard folders exist and return them
+    folders = crud.ensure_standard_folders(db, course_id)
+    
+    if not folders:
+        return []
+    return folders
+
+
+@app.get("/student/enrollments/{course_id}", response_model=List[schemas.FolderSchema])
+def get_student_enrollment_course_view(
     course_id: int, 
     db: Session = Depends(get_db),
     student: models.Student = Depends(get_curr_student)
 ):
-    course = crud.get_course_by_id(db, course_id)
+    """
+    Returns the nested tree of folders and subfolders for an enrolled course.
+    Includes standard folders: General, Materials, Assignments, Assessments.
+    """
+    # Verify student is enrolled in this course
+    enrolled_courses = crud.get_student_courses(db, student.student_id)
+    course_ids = [c.course_id for c in enrolled_courses]
+    
+    if course_id not in course_ids:
+        raise HTTPException(status_code=403, detail="Not enrolled in this course")
+    
+    # Ensure standard folders exist and return them
+    folders = crud.ensure_standard_folders(db, course_id)
+    
+    if not folders:
+        return []
+    return folders
+
+@app.post("/student/courses/{course_id}/enroll")
+def enroll_student(
+    course_id: int,
+    db: Session = Depends(get_db),
+    student: models.Student = Depends(get_curr_student)
+):
+    # 1. Check if the course even exists
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    enrolled_ids = [c.course_id for c in student.courses]
+    student_courses = crud.get_student_courses(db, student.student_id)
+    enrolled_ids = [c.course_id for c in student_courses]
     is_enrolled = course_id in enrolled_ids
 
     if not is_enrolled:
@@ -404,6 +478,10 @@ def get_home(
     instructor: models.Instructor = Depends(get_curr_instructor),
     db: Session = Depends(get_db)
 ):
+    
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # 1. Fetch all course IDs this instructor is associated with
     my_course_ids = db.query(models.course_instructor_link.c.course_id).filter(
         models.course_instructor_link.c.instructor_id == instructor.instructor_id
@@ -447,6 +525,9 @@ def get_instructor_profile(
     """
     Fetch specific instructor's profile. Security check: instructor can only view their own profile.
     """
+    if not current_instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # Security: only allow viewing own profile
     if current_instructor.instructor_id != instructor_id:
         raise HTTPException(status_code=403, detail="Unauthorized")
@@ -467,6 +548,9 @@ def update_instructor_profile(
     """
     Update specific instructor's profile. Security check: instructor can only update their own profile.
     """
+    if not current_instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # Security: only allow updating own profile
     if current_instructor.instructor_id != instructor_id:
         raise HTTPException(status_code=403, detail="Unauthorized")
@@ -492,12 +576,72 @@ def update_instructor_profile(
         raise HTTPException(status_code=400, detail="Update failed. Check if email is unique.")
 
 
+@app.get("/instructor/courses")
+def get_instructor_courses(
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """
+    Returns all courses for the current instructor with their folder structure.
+    Used by instructor's MyTeaching page.
+    """
+    # Get all course IDs for this instructor
+    my_course_ids = db.query(models.course_instructor_link.c.course_id).filter(
+        models.course_instructor_link.c.instructor_id == instructor.instructor_id
+    ).all()
+    
+    course_ids = [c[0] for c in my_course_ids]
+    
+    # Fetch course details for each course
+    courses = []
+    for course_id in course_ids:
+        course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+        if course:
+            # Get folders for this course
+            folders = db.query(models.Folder).filter(
+                models.Folder.course_id == course_id,
+                models.Folder.parent_id == None
+            ).all()
+            
+            # Get enrolled students for this course
+            students = db.query(models.Student).join(
+                models.course_student_link
+            ).filter(
+                models.course_student_link.c.course_id == course_id
+            ).all()
+            
+            courses.append({
+                "course_id": course.course_id,
+                "course_name": course.course_name,
+                # "course_description": course.course_description,
+                "duration": course.duration,
+                "skill_level": course.skill_level,
+                "course_fees": course.course_fees,
+                "instructor_name": instructor.name,
+                "folders": [schemas.FolderSchema.model_validate(f) for f in folders],
+                "students_enrolled": [
+                    {
+                        "id": s.student_id,
+                        "first_name": s.name.split()[0] if s.name else "",
+                        "last_name": s.name.split()[-1] if s.name and len(s.name.split()) > 1 else "",
+                        "email": s.email_id
+                    }
+                    for s in students
+                ]
+            })
+    
+    return courses
+
+
 @app.get("/instructor/courses/{course_id}")
 def get_inst_course_view(
     course_id: int,
     db: Session = Depends(get_db),
     instr: models.Instructor = Depends(get_curr_instructor)
 ):
+    if not instr:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # We query the course
     course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
 
@@ -531,6 +675,9 @@ def grade_students(
     db: Session = Depends(get_db),
     instr: models.Instructor = Depends(get_curr_instructor)
 ):
+    if not instr:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # 1. Verify the course exists (you already have this)
     course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
     if not course:
@@ -568,6 +715,9 @@ def get_student_course_detail(
     db: Session = Depends(get_db),
     instr: models.Instructor = Depends(get_curr_instructor)
 ):
+    if not instr:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # 1. Fetch Student Basic Info
     student = db.query(models.Student).filter(models.Student.student_id == student_id).first()
     if not student:
@@ -619,6 +769,9 @@ def edit_grade(
     db: Session = Depends(get_db),
     instr: models.Instructor = Depends(get_curr_instructor)
 ):
+    if not instr:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
     # 1. Look for existing evaluation
     db_eval = db.query(models.Evaluation).filter(
         models.Evaluation.course_id == course_id,
@@ -1923,6 +2076,297 @@ def remove_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to remove course")
+
+
+""" Routing for Folder creation """
+
+@app.post("/courses/{course_id}/add_folder")
+def add_top_level_folder(
+    course_id: int, 
+    folder_data: schemas.FolderCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """Creates a main folder (Chapter) directly under a course."""
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
+    # Verify instructor owns this course
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    instructors = crud.get_course_instructors(db, course_id)
+    instructor_ids = [i.instructor_id for i in instructors]
+    
+    if instructor.instructor_id not in instructor_ids:
+        raise HTTPException(status_code=403, detail="You are not authorized to modify this course")
+    
+    return crud.create_folder(db, title=folder_data.title, course_id=course_id)
+
+
+@app.post("/courses/{course_id}/{folder_id}/add_sub")
+def add_subfolder(
+    course_id: int,
+    folder_id: int,
+    folder_data: schemas.FolderCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    """Creates a subfolder inside an existing folder."""
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    # Verify instructor owns this course
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    instructors = crud.get_course_instructors(db, course_id)
+    instructor_ids = [i.instructor_id for i in instructors]
+    
+    if instructor.instructor_id not in instructor_ids:
+        raise HTTPException(status_code=403, detail="You are not authorized to modify this course")
+    
+    # Verify parent folder belongs to this course
+    parent_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == folder_id,
+        models.Folder.course_id == course_id
+    ).first()
+    
+    if not parent_folder:
+        raise HTTPException(status_code=404, detail="Parent folder not found")
+    
+    return crud.create_folder(db, title=folder_data.title, course_id=course_id, parent_id=folder_id)
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_video")
+def add_video(
+    course_id: int, 
+    folder_id: int, 
+    subfold_id: int,
+    video_data: schemas.VideoCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
+    # Verify instructor owns this course
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    instructors = crud.get_course_instructors(db, course_id)
+    instructor_ids = [i.instructor_id for i in instructors]
+    
+    if instructor.instructor_id not in instructor_ids:
+        raise HTTPException(status_code=403, detail="You are not authorized to modify this course")
+    
+    # Security Check: Ensure the subfolder actually belongs to the parent/course
+    target_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+    
+    if not target_folder:
+        raise HTTPException(status_code=404, detail="Target folder path not found in this course")
+
+    # 1. Create the Video
+    new_video = crud.add_videos(db, video_data,course_id)
+    
+    # 2. Link it to the subfolder
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="video", reference_id=new_video.video_id)
+    
+    return {"message": "Video created and nested", "video": new_video}
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_notes")
+def add_notes(
+    course_id: int, folder_id: int, subfold_id: int,
+    notes_data: schemas.NotesCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
+    # Verify instructor owns this course
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    instructors = crud.get_course_instructors(db, course_id)
+    instructor_ids = [i.instructor_id for i in instructors]
+    
+    if instructor.instructor_id not in instructor_ids:
+        raise HTTPException(status_code=403, detail="You are not authorized to modify this course")
+    
+    # Path validation
+    target_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+
+    if not target_folder: 
+        raise HTTPException(status_code=404, detail="Target folder not found")
+
+    # 1. Create Notes
+    new_notes = crud.add_notes(db, notes_data,course_id)
+    
+    # 2. Link
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="notes", reference_id=new_notes.notes_id)
+    
+    return {"message": "Notes added", "notes": new_notes}
+
+
+@app.post("/courses/{course_id}/{folder_id}/{subfold_id}/add_book")
+def add_book(
+    course_id: int, folder_id: int, subfold_id: int,
+    book_data: schemas.TextbookCreate,
+    db: Session = Depends(get_db),
+    instructor: models.Instructor = Depends(get_curr_instructor)
+):
+    if not instructor:
+        raise HTTPException(status_code=401, detail="Unauthorized - Instructor profile not found")
+    
+    # Verify instructor owns this course
+    course = db.query(models.Course).filter(models.Course.course_id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    instructors = crud.get_course_instructors(db, course_id)
+    instructor_ids = [i.instructor_id for i in instructors]
+    
+    if instructor.instructor_id not in instructor_ids:
+        raise HTTPException(status_code=403, detail="You are not authorized to modify this course")
+    
+    # Path validation
+    target_folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+
+    if not target_folder: 
+        raise HTTPException(status_code=404, detail="Target folder not found")
+    
+    # 1. Create the Textbook record (linked to course)
+    new_book = crud.add_textbook(db, book_data,course_id)
+    
+    # 2. Link the book to the specific folder
+    crud.add_item_to_folder(db, folder_id=subfold_id, item_type="textbook", reference_id=new_book.textbook_id)
+    
+    return {"message": "Book added to folder", "book": new_book}
+
+
+
+@app.get("/courses/{course_id}", response_model=List[schemas.FolderSchema])
+def get_course_structure(
+    course_id: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the nested tree of folders and subfolders for a course.
+    React uses this to render the 'Chapter' list and 'Topics'.
+    Automatically creates default folders if they don't exist.
+    """
+    # Ensure standard folders exist (General, Materials, Assignments, Assessments)
+    crud.ensure_standard_folders(db, course_id)
+    
+    # We only fetch top-level folders (parent_id is None) 
+    # The recursive schema handles fetching their subfolders automatically.
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    if not folders:
+        return []
+    return folders
+
+@app.get("/courses/{course_id}/{folder_id}/{subfold_id}", response_model=schemas.FolderSchema)
+def get_folder_contents(
+    course_id: int,
+    folder_id: int,
+    subfold_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the items (Videos, Notes, Assignments) inside a specific subfolder.
+    """
+    # Fetch the specific subfolder
+    folder = db.query(models.Folder).filter(
+        models.Folder.folder_id == subfold_id,
+        models.Folder.course_id == course_id
+    ).first()
+
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    return folder
+
+
+""" Content Fetch Routes (for students to view content) """
+
+@app.get("/content/video/{item_id}", response_model=schemas.Video)
+def get_video_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch video content by folder item ID.
+    Resolves item_id -> video_id -> returns video details with url_link.
+    """
+    print(f"🎥 Fetching video content for item ID: {item_id}")
+    video = crud.get_video_by_item_id(db, item_id)
+    print(f"🎥 Video found: {video}")
+    
+    if not video:
+        print(f"🎥 Video for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Video not found for this item")
+    
+    return video
+
+
+@app.get("/content/notes/{item_id}", response_model=schemas.Notes)
+def get_notes_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch notes content by folder item ID.
+    Resolves item_id -> notes_id -> returns notes details with url_link.
+    """
+    print(f"📄 Fetching notes content for item ID: {item_id}")
+    notes = crud.get_notes_by_item_id(db, item_id)
+    print(f"📄 Notes found: {notes}")
+    
+    if not notes:
+        print(f"📄 Notes for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Notes not found for this item")
+    
+    return notes
+
+
+@app.get("/content/book/{item_id}", response_model=schemas.Textbook)
+def get_textbook_content(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch textbook content by folder item ID.
+    Resolves item_id -> textbook_id -> returns textbook details.
+    """
+    print(f"📚 Fetching textbook content for item ID: {item_id}")
+    textbook = crud.get_textbook_by_item_id(db, item_id)
+    print(f"📚 Textbook found: {textbook}")
+    
+    if not textbook:
+        print(f"📚 Textbook for item {item_id} not found")
+        raise HTTPException(status_code=404, detail="Textbook not found for this item")
+    
+    # Ensure edition is present (for backward compatibility)
+    if not hasattr(textbook, 'edition') or textbook.edition is None:
+        textbook.edition = "N/A"
+    
+    return textbook
     
 @app.get("/admin/users")
 def admin_users(

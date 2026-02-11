@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from backend import models,schemas
 from datetime import datetime
+from typing import Optional
 
 """ Course Crud Operations """
 
@@ -87,6 +88,54 @@ def get_course_topics(db:Session, course_id:int):
     ).filter(
         models.course_topic_link.c.course_id == course_id
     ).all()
+
+
+""" Crud for Folder operations """
+
+def create_folder(db: Session, title: str, course_id: int, parent_id: Optional[int] = None):
+    db_folder = models.Folder(title=title, course_id=course_id, parent_id=parent_id)
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder
+
+def add_item_to_folder(db: Session, folder_id: int, item_type: str, reference_id: int):
+    # Map the reference_id to the correct column
+    new_item = models.FolderItem(folder_id=folder_id, item_type=item_type)
+    if item_type == "video": new_item.video_id = reference_id
+    elif item_type == "notes": new_item.notes_id = reference_id
+    elif item_type == "assignment": new_item.assignment_id = reference_id
+    
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return new_item
+
+def ensure_standard_folders(db: Session, course_id: int):
+    """
+    Ensures standard folders (General, Materials, Assignments, Assessments) exist for a course.
+    Returns list of all top-level folders for the course.
+    """
+    STANDARD_FOLDERS = ['General', 'Materials', 'Assignments', 'Assessments']
+    
+    for folder_name in STANDARD_FOLDERS:
+        # Check if folder already exists
+        existing = db.query(models.Folder).filter(
+            models.Folder.course_id == course_id,
+            models.Folder.title == folder_name,
+            models.Folder.parent_id == None
+        ).first()
+        
+        if not existing:
+            create_folder(db, title=folder_name, course_id=course_id, parent_id=None)
+    
+    # Return all top-level folders
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    return folders
 
 """ Instructor Crud operations """
 
@@ -175,12 +224,12 @@ def add_textbook(db: Session, textb:schemas.TextbookCreate, c_id: int):
     db.refresh(db_topic)
     return db_topic
 
-def add_notes(db: Session, notes: schemas.NotesCreate):
+def add_notes(db: Session, notes: schemas.NotesCreate,c_id):
     db_notes = models.Notes(
         title = notes.title,
         url_link = notes.url_link,
         document_type = notes.document_type,
-        course_id = notes.course_id
+        course_id = c_id
     )
     db.add(db_notes)
     db.commit()
@@ -228,6 +277,42 @@ def remove_videos(db: Session, vid_id: int):
         return True
 
     return False
+
+""" Fetch individual content operations (for students to view) """
+
+def get_video_by_id(db: Session, video_id: int):
+    """Fetch a specific video by ID"""
+    return db.query(models.Video).filter(models.Video.video_id == video_id).first()
+
+def get_notes_by_id(db: Session, notes_id: int):
+    """Fetch a specific notes document by ID"""
+    return db.query(models.Notes).filter(models.Notes.notes_id == notes_id).first()
+
+def get_textbook_by_id(db: Session, textbook_id: int):
+    """Fetch a specific textbook by ID"""
+    return db.query(models.Textbook).filter(models.Textbook.textbook_id == textbook_id).first()
+
+# New CRUD functions that take item_id and fetch the actual content
+def get_video_by_item_id(db: Session, item_id: int):
+    """Fetch video content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.video_id:
+        return None
+    return db.query(models.Video).filter(models.Video.video_id == item.video_id).first()
+
+def get_notes_by_item_id(db: Session, item_id: int):
+    """Fetch notes content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.notes_id:
+        return None
+    return db.query(models.Notes).filter(models.Notes.notes_id == item.notes_id).first()
+
+def get_textbook_by_item_id(db: Session, item_id: int):
+    """Fetch textbook content by folder item ID"""
+    item = db.query(models.FolderItem).filter(models.FolderItem.item_id == item_id).first()
+    if not item or not item.textbook_id:
+        return None
+    return db.query(models.Textbook).filter(models.Textbook.textbook_id == item.textbook_id).first()
 
 """ Student CRUD operations """
 

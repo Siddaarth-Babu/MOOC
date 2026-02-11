@@ -34,7 +34,7 @@ const Navbar = ({ instructorId }) => {
         
         <div className="instructor-nav-links">
           <Link to="/instructor" className="instructor-nav-link">Home</Link>
-          <Link to="/instructor/teaching" className="instructor-nav-link">Teaching</Link>
+          <Link to="/instructor/courses" className="instructor-nav-link">Teaching</Link>
         </div>
 
         <div className="instructor-nav-profile">

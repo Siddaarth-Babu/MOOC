@@ -4,221 +4,248 @@ import Navbar from './Navbar'
 import Footer from './Footer'
 
 const CoursePage = ({ courseData }) => {
-  const [activeTab, setActiveTab] = useState('content')
-  const [expandedSections, setExpandedSections] = useState({
-    general: true,
-    materials: false,
-    assignments: false,
-    assessments: false,
-    students: false
-  })
-
-  const [course, setCourse] = useState(courseData)
-  const [addInputs, setAddInputs] = useState({ general: '', materials: '', assignments: '', assessments: '' })
-  const [showAddPanel, setShowAddPanel] = useState(false)
-  const [addPanelType, setAddPanelType] = useState('section')
-  const [newAddName, setNewAddName] = useState('')
-
-  // Track which section's add input is visible (separate from floating add panel)
-  const [activeAddSection, setActiveAddSection] = useState(null)
-
-  // Confirmation dialog state for deletions
-  const [confirmDelete, setConfirmDelete] = useState({ visible: false, itemName: '', onConfirm: null })
-
-  // Student enrollment modal state
-  const [selectedStudent, setSelectedStudent] = useState(null)
-  const [studentCourseData, setStudentCourseData] = useState(null)
-  const [studentGrades, setStudentGrades] = useState({})
-  const [loadingStudentData, setLoadingStudentData] = useState(false)
-
   const navigate = useNavigate()
 
+  // Course data
+  const [course, setCourse] = useState(null)
+  const [folders, setFolders] = useState([])
+  const [activeTab, setActiveTab] = useState('content')
+  const [studentsEnrolled, setStudentsEnrolled] = useState([])
+
+  // Modal states
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false)
+  const [folderTitle, setFolderTitle] = useState('')
+
+  const [showCreateSubfolderModal, setShowCreateSubfolderModal] = useState(false)
+  const [selectedFolderId, setSelectedFolderId] = useState(null)
+  const [subfolderTitle, setSubfolderTitle] = useState('')
+
+  const [showContentModal, setShowContentModal] = useState(false)
+  const [selectedSubfolderId, setSelectedSubfolderId] = useState(null)
+  const [contentType, setContentType] = useState('video') // 'video', 'notes', 'book'
+  const [contentData, setContentData] = useState({ title: '', url_link: '', author: '', publisher: '', edition: '', document_type: 'pdf' })
+
+  // Student modal states
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [studentGrades, setStudentGrades] = useState({})
+
   useEffect(() => {
-    setCourse(courseData)
+    if (courseData) {
+      const id = courseData.course?.id || courseData.course?.course_id || courseData.course_id || courseData.id
+      setCourse({ id, name: courseData.course?.name || courseData.course_name || courseData.name })
+      setStudentsEnrolled(courseData.studentsEnrolled || courseData.students_enrolled || courseData.students || [])
+      if (id) {
+        fetchFolders(id)
+      }
+    }
   }, [courseData])
+
+  // Fetch folders from backend
+  const fetchFolders = async (cId) => {
+    try {
+      console.log('Fetching folders for course:', cId)
+      const res = await fetch(`http://localhost:8000/courses/${cId}`)
+      if (!res.ok) {
+        console.error(`Failed to fetch folders: ${res.status}`)
+        return
+      }
+      const data = await res.json()
+      console.log('Folders fetched:', data)
+      setFolders(data || [])
+    } catch (err) {
+      console.error('Error fetching folders:', err)
+    }
+  }
+
+  // CREATE FOLDER
+  const handleCreateFolder = async (e) => {
+    e.preventDefault()
+    if (!folderTitle.trim() || !course) return
+
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      alert('No access token found')
+      return
+    }
+
+    try {
+      console.log(`Creating folder: ${folderTitle}`)
+      const res = await fetch(`http://localhost:8000/courses/${course.id}/add_folder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: folderTitle })
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error(`Failed to create folder: ${res.status} - ${errText}`)
+        alert(`Failed to create folder: ${errText}`)
+        return
+      }
+
+      const newFolder = await res.json()
+      console.log('Folder created:', newFolder)
+      alert('Folder created successfully!')
+      setFolderTitle('')
+      setShowCreateFolderModal(false)
+      
+      // Fetch fresh folders
+      await fetchFolders(course.id)
+    } catch (err) {
+      console.error('Error creating folder:', err)
+      alert('Error creating folder')
+    }
+  }
+
+  // CREATE SUBFOLDER
+  const handleCreateSubfolder = async (e) => {
+    e.preventDefault()
+    if (!subfolderTitle.trim() || !selectedFolderId || !course) return
+
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      alert('No access token found')
+      return
+    }
+
+    try {
+      console.log(`Creating subfolder: ${subfolderTitle} under folder ${selectedFolderId}`)
+      const res = await fetch(`http://localhost:8000/courses/${course.id}/${selectedFolderId}/add_sub`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: subfolderTitle })
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error(`Failed to create subfolder: ${res.status} - ${errText}`)
+        alert(`Failed to create subfolder: ${errText}`)
+        return
+      }
+
+      const newSubfolder = await res.json()
+      console.log('Subfolder created:', newSubfolder)
+      alert('Subfolder created successfully!')
+      setSubfolderTitle('')
+      setShowCreateSubfolderModal(false)
+      setSelectedFolderId(null)
+      
+      // Fetch fresh folders
+      await fetchFolders(course.id)
+    } catch (err) {
+      console.error('Error creating subfolder:', err)
+      alert('Error creating subfolder')
+    }
+  }
+
+  // CREATE VIDEO/NOTES/BOOK
+  const handleCreateContent = async (e) => {
+    e.preventDefault()
+    if (!contentData.title.trim() || !selectedSubfolderId || !course) return
+
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      alert('No access token found')
+      return
+    }
+
+    try {
+      // Find folder and subfolder IDs
+      let parentFolderId = null
+      let subFolderId = null
+
+      for (const folder of folders) {
+        for (const subfolder of (folder.subfolders || [])) {
+          if (subfolder.folder_id === selectedSubfolderId) {
+            parentFolderId = folder.folder_id
+            subFolderId = subfolder.folder_id
+            break
+          }
+        }
+      }
+
+      if (!parentFolderId || !subFolderId) {
+        alert('Error: Could not find folder path')
+        return
+      }
+
+      let endpoint = null
+      let payload = null
+
+      if (contentType === 'video') {
+        endpoint = `http://localhost:8000/courses/${course.id}/${parentFolderId}/${subFolderId}/add_video`
+        payload = {
+          title: contentData.title,
+          url_link: contentData.url_link,
+          duration: 0
+        }
+      } else if (contentType === 'notes') {
+        endpoint = `http://localhost:8000/courses/${course.id}/${parentFolderId}/${subFolderId}/add_notes`
+        payload = {
+          title: contentData.title,
+          url_link: contentData.url_link,
+          document_type: contentData.document_type
+        }
+      } else if (contentType === 'book') {
+        endpoint = `http://localhost:8000/courses/${course.id}/${parentFolderId}/${subFolderId}/add_book`
+        payload = {
+          title: contentData.title,
+          author: contentData.author,
+          publisher: contentData.publisher,
+          edition: contentData.edition
+        }
+      }
+
+      console.log(`Creating ${contentType}:`, payload)
+      console.log('Endpoint:', endpoint)
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error(`Failed to create ${contentType}: ${res.status} - ${errText}`)
+        alert(`Failed to create ${contentType}: ${errText}`)
+        return
+      }
+
+      const result = await res.json()
+      console.log(`${contentType} created:`, result)
+      alert(`${contentType.charAt(0).toUpperCase() + contentType.slice(1)} created successfully!`)
+      
+      // Reset modal
+      setContentData({ title: '', url_link: '', author: '', publisher: '', edition: '', document_type: 'pdf' })
+      setShowContentModal(false)
+      setSelectedSubfolderId(null)
+      
+      // Fetch fresh folders
+      await fetchFolders(course.id)
+    } catch (err) {
+      console.error(`Error creating ${contentType}:`, err)
+      alert(`Error creating ${contentType}`)
+    }
+  }
+
+  // Open subfolder and show content options
+  const openSubfolderContent = (subfolderId) => {
+    setSelectedSubfolderId(subfolderId)
+    setShowContentModal(true)
+  }
 
   if (!course) {
     return <div className="instructor-course-details"><p>Loading...</p></div>
-  }
-
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }))
-  }
-
-  const handleAddInputChange = (section, value) => {
-    setAddInputs((s) => ({ ...s, [section]: value }))
-  }
-
-  const handleAddItem = (section) => {
-    const val = (addInputs[section] || '').trim()
-    if (!val) return
-    setCourse((c) => {
-      const next = { ...c }
-      if (!next.sections) next.sections = {}
-      if (!next.sections[section]) next.sections[section] = []
-      next.sections[section] = [...next.sections[section], { id: Date.now(), title: val, icon: '📄' }]
-      return next
-    })
-    setAddInputs((s) => ({ ...s, [section]: '' }))
-    setExpandedSections((s) => ({ ...s, [section]: true }))
-  }
-
-  const handleAddNewSection = (title) => {
-    const name = (title || '').trim()
-    if (!name) return
-    const keyBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '_')
-    const key = `${keyBase}_${Date.now()}`
-    setCourse((c) => {
-      const next = { ...c }
-      if (!next.sections) next.sections = {}
-      next.sections[key] = []
-      next.sectionTitles = { ...(next.sectionTitles || {}), [key]: name }
-      return next
-    })
-    setExpandedSections((s) => ({ ...s, [key]: true }))
-  }
-
-  const handleAddNewGrade = (name) => {
-    const title = (name || '').trim()
-    if (!title) return
-    setCourse((c) => {
-      const next = { ...c }
-      if (!next.grades) next.grades = { items: [], overall: null }
-      next.grades = { ...next.grades, items: [...(next.grades.items || []), { id: Date.now(), name: title, score: '', maxScore: 100, status: '' }] }
-      return next
-    })
-  }
-
-  // Delete item from section
-  const handleDeleteItem = (section, itemId, itemName) => {
-    setConfirmDelete({
-      visible: true,
-      itemName,
-      onConfirm: () => {
-        setCourse((c) => {
-          const next = { ...c }
-          if (next.sections && next.sections[section]) {
-            next.sections[section] = next.sections[section].filter(item => item.id !== itemId)
-          }
-          return next
-        })
-        setConfirmDelete({ visible: false, itemName: '', onConfirm: null })
-      }
-    })
-  }
-
-  // Delete section header
-  const handleDeleteSection = (section, sectionTitle) => {
-    setConfirmDelete({
-      visible: true,
-      itemName: `section "${sectionTitle}"`,
-      onConfirm: () => {
-        setCourse((c) => {
-          const next = { ...c }
-          if (next.sections) {
-            delete next.sections[section]
-          }
-          if (next.sectionTitles) {
-            delete next.sectionTitles[section]
-          }
-          setExpandedSections(s => {
-            const updated = { ...s }
-            delete updated[section]
-            return updated
-          })
-          return next
-        })
-        setConfirmDelete({ visible: false, itemName: '', onConfirm: null })
-      }
-    })
-  }
-
-  const studentsEnrolled = course.studentsEnrolled || course.students || []
-
-  // Open student enrollment modal and fetch/use data
-  const openStudentModal = async (student) => {
-    setSelectedStudent(student)
-    setLoadingStudentData(true)
-    try {
-      // First check if student has embedded courseGrades (from studentsEnrolled data)
-      if (student.courseGrades && student.courseGrades.items) {
-        // Use embedded student course data
-        const data = {
-          ...student,
-          sections: course.sections,
-          grades: student.courseGrades,
-          course: course.course
-        }
-        setStudentCourseData(data)
-        // Initialize grades from student data
-        const gradesMap = {}
-        student.courseGrades.items.forEach((item) => {
-          gradesMap[item.id] = { score: item.score || '', status: item.status || '' }
-        })
-        setStudentGrades(gradesMap)
-      } else {
-        // Fall back to API fetch if no embedded data
-        const res = await fetch(`/api/students/${encodeURIComponent(student.id || student.studentId)}/courses/${encodeURIComponent(course.course.id)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setStudentCourseData(data)
-          // Initialize grades from fetched data
-          if (data.grades && data.grades.items) {
-            const gradesMap = {}
-            data.grades.items.forEach((item) => {
-              gradesMap[item.id] = { score: item.score || '', status: item.status || '' }
-            })
-            setStudentGrades(gradesMap)
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch student course data:', err)
-    } finally {
-      setLoadingStudentData(false)
-    }
-  }
-
-  // Close student modal and reset
-  const closeStudentModal = () => {
-    setSelectedStudent(null)
-    setStudentCourseData(null)
-    setStudentGrades({})
-  }
-
-  // Save student grades
-  const saveStudentGrades = async () => {
-    if (!selectedStudent || !studentCourseData) return
-    try {
-      const payload = {
-        grades: Object.entries(studentGrades).map(([itemId, data]) => ({
-          itemId,
-          score: data.score,
-          status: data.status
-        }))
-      }
-      const res = await fetch(`/api/students/${encodeURIComponent(selectedStudent.id || selectedStudent.studentId)}/courses/${encodeURIComponent(course.course.id)}/grades`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      if (res.ok) {
-        alert('Grades saved successfully')
-      }
-    } catch (err) {
-      console.error('Failed to save grades:', err)
-      alert('Failed to save grades')
-    }
-  }
-
-  const handleGradeChange = (itemId, field, value) => {
-    setStudentGrades((prev) => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], [field]: value }
-    }))
   }
 
   return (
@@ -228,180 +255,130 @@ const CoursePage = ({ courseData }) => {
         {/* Course Header */}
         <div className="instructor-course-header">
           <div className="instructor-course-header-content">
-            <h1 className="instructor-course-details-title">{course.course.name}</h1>
-            <p className="instructor-course-meta-info">{course.course.id}</p>
+            <h1 className="instructor-course-details-title">{course.name}</h1>
+            <p className="instructor-course-meta-info">Course ID: {course.id}</p>
           </div>
         </div>
 
         {/* Tabs Navigation */}
         <div className="instructor-course-tabs-nav">
-          <button className={`instructor-tab-btn ${activeTab === 'content' ? 'active' : ''}`} onClick={() => setActiveTab('content')}>Content</button>
-          <button className={`instructor-tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>Details</button>
-          <button className={`instructor-tab-btn ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>Students Enrolled</button>
+          <button
+            className={`instructor-tab-btn ${activeTab === 'content' ? 'active' : ''}`}
+            onClick={() => setActiveTab('content')}
+          >
+            Content
+          </button>
+          <button
+            className={`instructor-tab-btn ${activeTab === 'students' ? 'active' : ''}`}
+            onClick={() => setActiveTab('students')}
+          >
+            Students Enrolled
+          </button>
         </div>
 
         {/* Tab Content */}
         <div className="instructor-course-tabs-content">
           {activeTab === 'content' && (
             <div className="tab-panel">
-              {/* General Section */}
-              <div className="instructor-content-section">
-                <button className="instructor-section-header" onClick={() => toggleSection('general')} style={{ position: 'relative' }}>
-                  <span className={`instructor-section-arrow ${expandedSections.general ? 'open' : ''}`}>▼</span>
-                  <span className="instructor-section-title">General</span>
-                  <button className="instructor-add-section-btn" onClick={(e) => { e.stopPropagation(); setActiveAddSection(activeAddSection === 'general' ? null : 'general'); setExpandedSections(s => ({...s, general: true})); }} style={{ position: 'absolute', right: 35, top: '50%', transform: 'translateY(-50%)', background: '#27ae60', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>+</button>
-                  <button className="instructor-delete-section-btn" onClick={(e) => { e.stopPropagation(); handleDeleteSection('general', 'General'); }} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>−</button>
+              {/* Create Folder Button */}
+              <div style={{ marginBottom: '2rem' }}>
+                <button
+                  onClick={() => setShowCreateFolderModal(true)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#27ae60',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  + Create Folder
                 </button>
-                {expandedSections.general && (
-                  <div>
-                    {activeAddSection === 'general' && (
-                      <div className="instructor-add-input">
-                        <input value={addInputs.general} onChange={(e) => handleAddInputChange('general', e.target.value)} placeholder="Add general item" />
-                        <button onClick={() => handleAddItem('general')}>Add</button>
-                      </div>
-                    )}
-                    <div className="section-content">
-                      {course.sections?.general?.map((item) => (
-                        <div key={item.id} className="instructor-item" style={{ position: 'relative', paddingLeft: '3.5rem', cursor: 'pointer' }} onClick={() => navigate(`/instructor/content/general/${item.id}`)}>
-                          <button className="instructor-delete-item-btn" onClick={(e) => { e.stopPropagation(); handleDeleteItem('general', item.id, item.title); }} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>−</button>
-                          <span className="item-icon">{item.icon}</span>
-                          <span className="item-title">{item.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Materials Section */}
-              <div className="instructor-content-section">
-                <button className="instructor-section-header" onClick={() => toggleSection('materials')} style={{ position: 'relative' }}>
-                  <span className={`instructor-section-arrow ${expandedSections.materials ? 'open' : ''}`}>▼</span>
-                  <span className="instructor-section-title">Materials</span>
-                  <button className="instructor-add-section-btn" onClick={(e) => { e.stopPropagation(); setActiveAddSection(activeAddSection === 'materials' ? null : 'materials'); setExpandedSections(s => ({...s, materials: true})); }} style={{ position: 'absolute', right: 35, top: '50%', transform: 'translateY(-50%)', background: '#27ae60', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>+</button>
-                  <button className="instructor-delete-section-btn" onClick={(e) => { e.stopPropagation(); handleDeleteSection('materials', 'Materials'); }} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>−</button>
-                </button>
-                {expandedSections.materials && (
-                  <div>
-                    {activeAddSection === 'materials' && (
-                      <div className="instructor-add-input">
-                        <input value={addInputs.materials} onChange={(e) => handleAddInputChange('materials', e.target.value)} placeholder="Add material" />
-                        <button onClick={() => handleAddItem('materials')}>Add</button>
-                      </div>
-                    )}
-                    <div className="section-content">
-                      {course.sections?.materials?.map((item) => (
-                        <div key={item.id} className="instructor-item" style={{ position: 'relative', paddingLeft: '3.5rem', cursor: 'pointer' }} onClick={() => navigate(`/instructor/content/materials/${item.id}`)}>
-                          <button className="instructor-delete-item-btn" onClick={(e) => { e.stopPropagation(); handleDeleteItem('materials', item.id, item.title); }} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>−</button>
-                          <span className="item-icon">{item.icon}</span>
-                          <span className="item-title">{item.title}</span>
+              {/* Folders List */}
+              <div style={{ marginTop: '2rem' }}>
+                {folders.length === 0 ? (
+                  <p style={{ color: '#999', fontSize: '1rem' }}>No folders yet. Create one to get started!</p>
+                ) : (
+                  folders.map((folder) => (
+                    <div key={folder.folder_id} style={{ marginBottom: '2rem', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
+                      {/* Folder Header */}
+                      <div style={{
+                        padding: '1.5rem',
+                        background: '#f5f5f5',
+                        borderBottom: '1px solid #e0e0e0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>📁 {folder.title}</h3>
+                          <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                            {(folder.subfolders || []).length} subfolder(s)
+                          </p>
                         </div>
-                      ))}
+                        <button
+                          onClick={() => {
+                            setSelectedFolderId(folder.folder_id)
+                            setShowCreateSubfolderModal(true)
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#3498db',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          + Add Subfolder
+                        </button>
+                      </div>
+
+                      {/* Subfolders List */}
+                      <div style={{ padding: '1rem' }}>
+                        {(folder.subfolders || []).length === 0 ? (
+                          <p style={{ color: '#999', fontSize: '0.9rem', margin: 0 }}>No subfolders yet</p>
+                        ) : (
+                          (folder.subfolders || []).map((subfolder) => (
+                            <div
+                              key={subfolder.folder_id}
+                              onClick={() => openSubfolderContent(subfolder.folder_id)}
+                              style={{
+                                padding: '1rem',
+                                marginBottom: '0.75rem',
+                                background: '#fff',
+                                border: '1px solid #ddd',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+                            >
+                              <div>
+                                <h4 style={{ margin: '0 0 0.3rem 0', color: '#333' }}>📂 {subfolder.title}</h4>
+                                <p style={{ margin: 0, color: '#666', fontSize: '0.85rem' }}>
+                                  {(subfolder.items || []).length} item(s) • Click to manage content
+                                </p>
+                              </div>
+                              <span style={{ color: '#3498db', fontSize: '1.2rem' }}>→</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))
                 )}
-              </div>
-
-              {/* Assignments Section */}
-              <div className="instructor-content-section">
-                <button className="instructor-section-header" onClick={() => toggleSection('assignments')} style={{ position: 'relative' }}>
-                  <span className={`instructor-section-arrow ${expandedSections.assignments ? 'open' : ''}`}>▼</span>
-                  <span className="instructor-section-title">Assignments</span>
-                  <button className="instructor-add-section-btn" onClick={(e) => { e.stopPropagation(); setActiveAddSection(activeAddSection === 'assignments' ? null : 'assignments'); setExpandedSections(s => ({...s, assignments: true})); }} style={{ position: 'absolute', right: 35, top: '50%', transform: 'translateY(-50%)', background: '#27ae60', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>+</button>
-                  <button className="instructor-delete-section-btn" onClick={(e) => { e.stopPropagation(); handleDeleteSection('assignments', 'Assignments'); }} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>−</button>
-                </button>
-                {expandedSections.assignments && (
-                  <div>
-                    {activeAddSection === 'assignments' && (
-                      <div className="instructor-add-input">
-                        <input value={addInputs.assignments} onChange={(e) => handleAddInputChange('assignments', e.target.value)} placeholder="Add assignment" />
-                        <button onClick={() => handleAddItem('assignments')}>Add</button>
-                      </div>
-                    )}
-                    <div className="section-content">
-                      {course.sections?.assignments?.map((item) => (
-                        <div key={item.id} className="instructor-item" style={{ position: 'relative', paddingLeft: '3.5rem', cursor: 'pointer' }} onClick={() => navigate(`/instructor/content/assignments/${item.id}`)}>
-                          <button className="instructor-delete-item-btn" onClick={(e) => { e.stopPropagation(); handleDeleteItem('assignments', item.id, item.title); }} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>−</button>
-                          <span className="item-icon">{item.icon}</span>
-                          <span className="item-title">{item.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Assessments Section */}
-              <div className="instructor-content-section">
-                <button className="instructor-section-header" onClick={() => toggleSection('assessments')} style={{ position: 'relative' }}>
-                  <span className={`instructor-section-arrow ${expandedSections.assessments ? 'open' : ''}`}>▼</span>
-                  <span className="instructor-section-title">Assessments</span>
-                  <button className="instructor-add-section-btn" onClick={(e) => { e.stopPropagation(); setActiveAddSection(activeAddSection === 'assessments' ? null : 'assessments'); setExpandedSections(s => ({...s, assessments: true})); }} style={{ position: 'absolute', right: 35, top: '50%', transform: 'translateY(-50%)', background: '#27ae60', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>+</button>
-                  <button className="instructor-delete-section-btn" onClick={(e) => { e.stopPropagation(); handleDeleteSection('assessments', 'Assessments'); }} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>−</button>
-                </button>
-                {expandedSections.assessments && (
-                  <div>
-                    {activeAddSection === 'assessments' && (
-                      <div className="instructor-add-input">
-                        <input value={addInputs.assessments} onChange={(e) => handleAddInputChange('assessments', e.target.value)} placeholder="Add assessment" />
-                        <button onClick={() => handleAddItem('assessments')}>Add</button>
-                      </div>
-                    )}
-                    <div className="section-content">
-                      {course.sections?.assessments?.map((item) => (
-                        <div key={item.id} className="instructor-item" style={{ position: 'relative', paddingLeft: '3.5rem', cursor: 'pointer' }} onClick={() => navigate(`/instructor/content/assessments/${item.id}`)}>
-                          <button className="instructor-delete-item-btn" onClick={(e) => { e.stopPropagation(); handleDeleteItem('assessments', item.id, item.title); }} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>−</button>
-                          <span className="item-icon">{item.icon}</span>
-                          <span className="item-title">{item.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Render any custom dynamic sections */}
-              {(course.sections ? Object.keys(course.sections) : []).filter(k => !['general','materials','assignments','assessments'].includes(k)).map((key) => (
-                <div className="instructor-content-section" key={key}>
-                  <button className="instructor-section-header" onClick={() => toggleSection(key)} style={{ position: 'relative' }}>
-                    <span className={`instructor-section-arrow ${expandedSections[key] ? 'open' : ''}`}>▼</span>
-                    <span className="instructor-section-title">{(course.sectionTitles && course.sectionTitles[key]) || key}</span>
-                    <button className="instructor-add-section-btn" onClick={(e) => { e.stopPropagation(); setActiveAddSection(activeAddSection === key ? null : key); setExpandedSections(s => ({...s, [key]: true})); }} style={{ position: 'absolute', right: 35, top: '50%', transform: 'translateY(-50%)', background: '#27ae60', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>+</button>
-                    <button className="instructor-delete-section-btn" onClick={(e) => { e.stopPropagation(); handleDeleteSection(key, (course.sectionTitles && course.sectionTitles[key]) || key); }} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>−</button>
-                  </button>
-                  {expandedSections[key] && (
-                    <div>
-                      {activeAddSection === key && (
-                        <div className="instructor-add-input">
-                          <input value={addInputs[key] || ''} onChange={(e) => handleAddInputChange(key, e.target.value)} placeholder={`Add item to ${(course.sectionTitles && course.sectionTitles[key]) || key}`} />
-                          <button onClick={() => handleAddItem(key)}>Add</button>
-                        </div>
-                      )}
-                      <div className="section-content">
-                        {(course.sections[key] || []).map((item) => (
-                          <div key={item.id} className="instructor-item" style={{ position: 'relative', paddingLeft: '3.5rem', cursor: 'pointer' }} onClick={() => navigate(`/instructor/content/${key}/${item.id}`)}>
-                            <button className="instructor-delete-item-btn" onClick={(e) => { e.stopPropagation(); handleDeleteItem(key, item.id, item.title); }} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>−</button>
-                            <span className="item-icon">{item.icon}</span>
-                            <span className="item-title">{item.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'details' && (
-            <div className="tab-panel">
-              <div className="details-content">
-                {course.details && course.details.map((field, idx) => (
-                  <div key={idx} className="detail-field" style={field.fullWidth ? { gridColumn: '1 / -1' } : {}}>
-                    <label>{field.label}</label>
-                    <p>{field.value}</p>
-                  </div>
-                ))}
               </div>
             </div>
           )}
@@ -410,19 +387,26 @@ const CoursePage = ({ courseData }) => {
             <div className="tab-panel">
               <div className="instructor-students-list">
                 {studentsEnrolled.length === 0 ? (
-                  <div className="no-courses-message-instructor"><p>No students enrolled.</p></div>
+                  <p style={{ color: '#999' }}>No students enrolled yet.</p>
                 ) : (
-                  studentsEnrolled.map((s) => (
-                    <div key={s.id || s.studentId || s.email} className="instructor-student-item">
-                      <div 
-                        style={{ cursor: 'pointer', flex: 1 }}
-                        onClick={() => openStudentModal(s)}
-                        className="instructor-student-name-link"
-                      >
-                        {s.name || s.fullName || s.email}
-                      </div>
+                  studentsEnrolled.map((student) => (
+                    <div
+                      key={student.id || student.student_id}
+                      style={{
+                        padding: '1rem',
+                        borderBottom: '1px solid #eee',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
                       <div>
-                        <button className="instructor-student-link" onClick={() => openStudentModal(s)}>View Grades</button>
+                        <p style={{ margin: 0, fontWeight: 'bold', color: '#333' }}>
+                          {student.name || student.fullName || student.email}
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#666', fontSize: '0.9rem' }}>
+                          {student.email || student.email_id}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -433,176 +417,452 @@ const CoursePage = ({ courseData }) => {
         </div>
       </div>
 
-      {/* Student Enrollment Modal Overlay */}
-      {selectedStudent && (
-        <div className="instructor-modal-overlay" onClick={closeStudentModal}>
-          <div className="instructor-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="instructor-modal-header">
-              <h2>{selectedStudent.name || selectedStudent.fullName || selectedStudent.email} - {course.course.name}</h2>
-              <button className="instructor-modal-close" onClick={closeStudentModal}>✕</button>
-            </div>
-            
-            <div className="instructor-modal-body">
-              {loadingStudentData ? (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>Loading student data...</div>
-              ) : studentCourseData ? (
-                <>
-                  {/* Course Content Sections */}
-                    <div style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ color: '#ff8c42', marginBottom: '1rem' }}>Course Content</h3>
-                    {studentCourseData.sections && Object.entries(studentCourseData.sections).map(([sectionKey, items]) => (
-                      <div key={sectionKey} style={{ marginBottom: '1rem' }}>
-                        <h4 style={{ textTransform: 'capitalize', color: '#222' }}>{sectionKey}</h4>
-                        <div>
-                          {items && items.map((item) => {
-                            // find submission for this student & item (may be in different shapes depending on API)
-                            const submissions = studentCourseData.submissions || selectedStudent?.submissions || []
-                            const submission = submissions.find((s) => String(s.itemId) === String(item.id) || String(s.itemId) === String(item.id))
-
-                            return (
-                              <div key={item.id} style={{ padding: '0.5rem 0', color: '#666' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div><span>{item.icon} {item.title}</span></div>
-                                  {(sectionKey === 'assignments' || sectionKey === 'assessments') && (
-                                    <div style={{ marginLeft: '1rem' }}>
-                                      {submission ? (
-                                        <a href={submission.url || submission.link || submission.pdfUrl} target="_blank" rel="noreferrer" style={{ color: '#1f6feb', fontWeight: 600 }}>View Submission</a>
-                                      ) : (
-                                        <span style={{ color: '#999' }}>No submission</span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                                {/* Optionally show extra submission info */}
-                                {submission && submission.filename && (
-                                  <div style={{ fontSize: '0.85rem', color: '#777' }}>{submission.filename}</div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Editable Grades */}
-                  <div>
-                    <h3 style={{ color: '#ff8c42', marginBottom: '1rem' }}>Grades</h3>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #fde7db' }}>
-                          <th style={{ textAlign: 'left', padding: '0.75rem', color: '#374151' }}>Assignment/Assessment</th>
-                          <th style={{ textAlign: 'left', padding: '0.75rem', color: '#374151' }}>Score</th>
-                          <th style={{ textAlign: 'left', padding: '0.75rem', color: '#374151' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {studentCourseData.grades?.items?.map((item) => (
-                          <tr key={item.id} style={{ borderBottom: '1px solid #fde7db' }}>
-                            <td style={{ padding: '0.75rem', color: '#222' }}>{item.name}</td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <input
-                                type="number"
-                                value={studentGrades[item.id]?.score ?? ''}
-                                onChange={(e) => handleGradeChange(item.id, 'score', e.target.value)}
-                                style={{
-                                  width: '80px',
-                                  padding: '0.5rem',
-                                  border: '1px solid #f1a66a',
-                                  borderRadius: '4px'
-                                }}
-                                placeholder={item.score ?? '-'}
-                              />
-                            </td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <input
-                                type="text"
-                                value={studentGrades[item.id]?.status ?? ''}
-                                onChange={(e) => handleGradeChange(item.id, 'status', e.target.value)}
-                                style={{
-                                  width: '120px',
-                                  padding: '0.5rem',
-                                  border: '1px solid #f1a66a',
-                                  borderRadius: '4px'
-                                }}
-                                placeholder={item.status ?? '-'}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                      <button
-                        onClick={saveStudentGrades}
-                        style={{
-                          background: '#ff8c42',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.7rem 1.5rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '700'
-                        }}
-                      >
-                        Save Grades
-                      </button>
-                      <button
-                        onClick={closeStudentModal}
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #f1a66a',
-                          color: '#ff8c42',
-                          padding: '0.7rem 1.5rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '700'
-                        }}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Could not load student data</div>
-              )}
-            </div>
+      {/* CREATE FOLDER MODAL */}
+      {showCreateFolderModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowCreateFolderModal(false)}>
+          <div style={{
+            background: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>Create New Folder</h2>
+            <form onSubmit={handleCreateFolder}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                  Folder Title
+                </label>
+                <input
+                  type="text"
+                  value={folderTitle}
+                  onChange={(e) => setFolderTitle(e.target.value)}
+                  placeholder="e.g., Week 1 - Introduction"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box'
+                  }}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateFolderModal(false)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#ccc',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#27ae60',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Create Folder
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Confirmation delete modal */}
-      {confirmDelete.visible && (
-        <div className="instructor-modal-overlay" onClick={() => setConfirmDelete({ visible: false, itemName: '', onConfirm: null })} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 150 }}>
-          <div className="instructor-modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '400px', background: '#fff', borderRadius: 10, padding: '1.5rem', textAlign: 'center' }}>
-            <p style={{ fontSize: '0.95rem', color: '#222', marginBottom: '0.5rem' }}>Confirm deletion of <strong>{confirmDelete.itemName}</strong></p>
-            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button onClick={() => setConfirmDelete({ visible: false, itemName: '', onConfirm: null })} style={{ padding: '0.6rem 1.2rem', background: '#f0f0f0', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>No</button>
-              <button onClick={() => confirmDelete.onConfirm && confirmDelete.onConfirm()} style={{ padding: '0.6rem 1.2rem', background: '#ff4444', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>Yes</button>
-            </div>
+      {/* CREATE SUBFOLDER MODAL */}
+      {showCreateSubfolderModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowCreateSubfolderModal(false)}>
+          <div style={{
+            background: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>Create New Subfolder</h2>
+            <form onSubmit={handleCreateSubfolder}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                  Subfolder Title
+                </label>
+                <input
+                  type="text"
+                  value={subfolderTitle}
+                  onChange={(e) => setSubfolderTitle(e.target.value)}
+                  placeholder="e.g., Lecture 1"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box'
+                  }}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateSubfolderModal(false)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#ccc',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Create Subfolder
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Floating add control - only show in Content tab */}
-      {activeTab === 'content' && (
-        <div className="instructor-floating-add">
-          <button className="instructor-floating-btn" onClick={() => setShowAddPanel((s) => !s)}>＋</button>
-          {showAddPanel && (
-            <div className="instructor-add-panel">
-              <div className="panel-row" style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 600, color: '#222' }}>Adding new Section</div>
-              <input value={newAddName} onChange={(e) => setNewAddName(e.target.value)} placeholder={`Section title (e.g., Extra Materials)`} />
-              <div className="panel-actions">
-                <button onClick={() => {
-                  handleAddNewSection(newAddName)
-                  setNewAddName('')
-                  setShowAddPanel(false)
-                }}>Add</button>
-                <button onClick={() => setShowAddPanel(false)}>Cancel</button>
+      {/* CONTENT MANAGEMENT MODAL */}
+      {showContentModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          overflowY: 'auto'
+        }} onClick={() => setShowContentModal(false)}>
+          <div style={{
+            background: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            maxWidth: '600px',
+            width: '90%',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            margin: '2rem auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#333' }}>Add Content to Subfolder</h2>
+
+            {/* Content Type Selector */}
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ display: 'block', marginBottom: '1rem', color: '#333', fontWeight: 'bold' }}>
+                Content Type
+              </label>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => {
+                    setContentType('video')
+                    setContentData({ title: '', url_link: '', author: '', publisher: '', edition: '', document_type: 'pdf' })
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: contentType === 'video' ? '#27ae60' : '#eee',
+                    color: contentType === 'video' ? 'white' : '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  🎥 Video
+                </button>
+                <button
+                  onClick={() => {
+                    setContentType('notes')
+                    setContentData({ title: '', url_link: '', author: '', publisher: '', edition: '', document_type: 'pdf' })
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: contentType === 'notes' ? '#27ae60' : '#eee',
+                    color: contentType === 'notes' ? 'white' : '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  📄 Notes
+                </button>
+                <button
+                  onClick={() => {
+                    setContentType('book')
+                    setContentData({ title: '', url_link: '', author: '', publisher: '', edition: '', document_type: 'pdf' })
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: contentType === 'book' ? '#27ae60' : '#eee',
+                    color: contentType === 'book' ? 'white' : '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  📚 Book
+                </button>
               </div>
             </div>
-          )}
+
+            {/* Form */}
+            <form onSubmit={handleCreateContent}>
+              {/* Title (for all types) */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={contentData.title}
+                  onChange={(e) => setContentData({ ...contentData, title: e.target.value })}
+                  placeholder="Enter title"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box'
+                  }}
+                  required
+                />
+              </div>
+
+              {/* Video: URL + Duration */}
+              {contentType === 'video' && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                    Video Link (YouTube, Vimeo, etc.)
+                  </label>
+                  <input
+                    type="url"
+                    value={contentData.url_link}
+                    onChange={(e) => setContentData({ ...contentData, url_link: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box'
+                    }}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Notes: URL + Document Type */}
+              {contentType === 'notes' && (
+                <>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                      Document Link (PDF, Google Drive, etc.)
+                    </label>
+                    <input
+                      type="url"
+                      value={contentData.url_link}
+                      onChange={(e) => setContentData({ ...contentData, url_link: e.target.value })}
+                      placeholder="https://example.com/document.pdf"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                      Document Type
+                    </label>
+                    <select
+                      value={contentData.document_type}
+                      onChange={(e) => setContentData({ ...contentData, document_type: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="pdf">PDF</option>
+                      <option value="docx">DOCX</option>
+                      <option value="txt">Text</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Book: Author, Publisher, Edition */}
+              {contentType === 'book' && (
+                <>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                      Author
+                    </label>
+                    <input
+                      type="text"
+                      value={contentData.author}
+                      onChange={(e) => setContentData({ ...contentData, author: e.target.value })}
+                      placeholder="Author name"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                      Publisher
+                    </label>
+                    <input
+                      type="text"
+                      value={contentData.publisher}
+                      onChange={(e) => setContentData({ ...contentData, publisher: e.target.value })}
+                      placeholder="Publisher name"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontWeight: 'bold' }}>
+                      Edition
+                    </label>
+                    <input
+                      type="text"
+                      value={contentData.edition}
+                      onChange={(e) => setContentData({ ...contentData, edition: e.target.value })}
+                      placeholder="e.g., 3rd Edition"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowContentModal(false)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#ccc',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#27ae60',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Create {contentType.charAt(0).toUpperCase() + contentType.slice(1)}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -612,4 +872,3 @@ const CoursePage = ({ courseData }) => {
 }
 
 export default CoursePage
-

@@ -20,10 +20,32 @@ const CourseDetails = () => {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/courses/${encodeURIComponent(courseId)}`)
+        const res = await fetch(`http://localhost:8000/instructor/courses/${encodeURIComponent(courseId)}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        })
         if (!res.ok) throw new Error(`Failed to fetch course: ${res.status}`)
         const data = await res.json()
-        if (mounted) setCourseData(data)
+        
+        // Get folders for this course
+        const foldersRes = await fetch(`http://localhost:8000/courses/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        })
+        
+        if (foldersRes.ok) {
+          const folders = await foldersRes.json()
+          const courseDetails = {
+            ...data.course_details,
+            folders: folders,
+            co_instructors: data.co_instructors || []
+          }
+          if (mounted) setCourseData(courseDetails)
+        } else {
+          if (mounted) setCourseData(data.course_details)
+        }
       } catch (err) {
         if (mounted) setError(err.message || 'Failed to load')
       } finally {
