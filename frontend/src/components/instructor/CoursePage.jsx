@@ -33,11 +33,97 @@ const CoursePage = ({ courseData }) => {
 
   const navigate = useNavigate()
 
+  // Normalize incoming courseData to a consistent internal shape:
+  // { course: { id, name }, sections: { general: [], materials: [], ... }, grades, details, studentsEnrolled }
+  const getSectionType = (folderTitle) => {
+    const title = (folderTitle || '').toLowerCase()
+    if (title.includes('general')) return 'general'
+    if (title.includes('material')) return 'materials'
+    if (title.includes('assignment')) return 'assignments'
+    if (title.includes('assessment')) return 'assessments'
+    return 'materials'
+  }
+
+  const foldersToSections = (folders) => {
+    const sections = { general: [], materials: [], assignments: [], assessments: [] }
+    if (!folders || !Array.isArray(folders)) return sections
+    folders.forEach((folder) => {
+      const sectionType = getSectionType(folder.title)
+      if (folder.items && Array.isArray(folder.items)) {
+        folder.items.forEach((item) => {
+          sections[sectionType].push({
+            id: item.item_id || item.id,
+            title: item.title || `${item.item_type || 'item'} #${item.item_id || item.id}`,
+            icon: item.icon || (item.item_type ? (item.item_type === 'video' ? '🎥' : '📄') : '📌'),
+            item_type: item.item_type,
+            video_id: item.video_id,
+            notes_id: item.notes_id,
+            assignment_id: item.assignment_id
+          })
+        })
+      }
+      // also handle nested subfolders
+      if (folder.subfolders && Array.isArray(folder.subfolders)) {
+        folder.subfolders.forEach((sf) => {
+          const st = getSectionType(sf.title)
+          if (sf.items && Array.isArray(sf.items)) {
+            sf.items.forEach((item) => {
+              sections[st].push({
+                id: item.item_id || item.id,
+                title: item.title || `${item.item_type || 'item'} #${item.item_id || item.id}`,
+                icon: item.icon || (item.item_type ? (item.item_type === 'video' ? '🎥' : '📄') : '📌'),
+                item_type: item.item_type,
+                video_id: item.video_id,
+                notes_id: item.notes_id,
+                assignment_id: item.assignment_id
+              })
+            })
+          }
+        })
+      }
+    })
+    return sections
+  }
+
   useEffect(() => {
-    setCourse(courseData)
+    if (!courseData) {
+      setCourse(null)
+      return
+    }
+
+    // If already in normalized shape
+    if (courseData.course && (courseData.sections || courseData.folders)) {
+      const normalized = {
+          course: {
+            id: courseData.course.id || courseData.course.course_id || courseData.course_id || courseData.id,
+            name: courseData.course.name || courseData.course.course_name || courseData.course_name || courseData.name
+          },
+          sections: courseData.sections || foldersToSections(courseData.folders),
+          grades: courseData.grades || courseData.course?.grades || { items: [] },
+          details: courseData.details || [],
+          studentsEnrolled: courseData.studentsEnrolled || courseData.students_enrolled || courseData.students || [],
+          rawFolders: courseData.folders || courseData.course?.folders || null
+        }
+      setCourse(normalized)
+      return
+    }
+
+    // If backend provided a flat course object (e.g. course.course_id, course.course_name, folders)
+    const normalized = {
+      course: {
+        id: courseData.course_id || courseData.id || courseData.course?.course_id || courseData.course?.id,
+        name: courseData.course_name || courseData.course?.course_name || courseData.name || courseData.course?.name
+      },
+      sections: courseData.sections || foldersToSections(courseData.folders || courseData.course?.folders || []),
+      grades: courseData.grades || courseData.course?.grades || { items: [] },
+      details: courseData.details || courseData.course?.details || [],
+      studentsEnrolled: courseData.students_enrolled || courseData.students || courseData.studentsEnrolled || [],
+      rawFolders: courseData.folders || courseData.course?.folders || null
+    }
+    setCourse(normalized)
   }, [courseData])
 
-  if (!course) {
+  if (!course || !course.course) {
     return <div className="instructor-course-details"><p>Loading...</p></div>
   }
 
@@ -64,6 +150,74 @@ const CoursePage = ({ courseData }) => {
     })
     setAddInputs((s) => ({ ...s, [section]: '' }))
     setExpandedSections((s) => ({ ...s, [section]: true }))
+    // Try to persist the new item to backend (video/notes/book heuristics)
+    ;(async () => {
+      try {
+        const token = localStorage.getItem('access_token')
+        const courseId = course?.course?.id
+        if (!courseId) return
+
+        // find target folder/subfolder ids
+        const findSubfolderForSection = (sectionKey) => {
+          const folders = course.rawFolders || []
+          for (const f of folders) {
+            const st = getSectionType(f.title)
+            if (st === sectionKey) {
+              // prefer subfolders if present
+              if (f.subfolders && f.subfolders.length > 0) return { folder_id: f.folder_id, subfold_id: f.subfolders[0].folder_id }
+              return { folder_id: f.folder_id, subfold_id: f.folder_id }
+            }
+            // also check subfolders
+            if (f.subfolders && f.subfolders.length > 0) {
+              for (const sf of f.subfolders) {
+                const sst = getSectionType(sf.title)
+                if (sst === sectionKey) return { folder_id: f.folder_id, subfold_id: sf.folder_id }
+              }
+            }
+          }
+          return null
+        }
+
+        let target = findSubfolderForSection(section)
+        if (!target) {
+          // fetch folders as fallback
+          const res = await fetch(`http://localhost:8000/courses/${courseId}`)
+          if (!res.ok) return
+          const folders = await res.json()
+          target = (folders && folders.length > 0) ? { folder_id: folders[0].folder_id, subfold_id: (folders[0].subfolders && folders[0].subfolders[0] && folders[0].subfolders[0].folder_id) || folders[0].folder_id } : null
+        }
+        if (!target) return
+
+        // decide type: URL containing youtube/vimeo -> video, url ending .pdf -> notes, otherwise textbook
+        const isUrl = /^https?:\/\//i.test(val)
+        const lower = val.toLowerCase()
+        let endpoint = null
+        let payload = null
+        if (isUrl && (lower.includes('youtube') || lower.includes('vimeo') || lower.includes('youtu'))) {
+          endpoint = `http://localhost:8000/courses/${courseId}/${target.folder_id}/${target.subfold_id}/add_video`
+          payload = { title: val.slice(0, 120), url_link: val, duration: 0 }
+        } else if (isUrl && lower.endsWith('.pdf')) {
+          endpoint = `http://localhost:8000/courses/${courseId}/${target.folder_id}/${target.subfold_id}/add_notes`
+          payload = { title: val.slice(0, 120), url_link: val, document_type: 'pdf' }
+        } else {
+          endpoint = `http://localhost:8000/courses/${courseId}/${target.folder_id}/${target.subfold_id}/add_book`
+          payload = { title: val.slice(0, 120), author: 'Unknown', publisher: 'Unknown', edition: '' }
+        }
+
+        if (!endpoint) return
+
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        })
+      } catch (err) {
+        console.error('Failed to persist new item:', err)
+      }
+    })()
   }
 
   const handleAddNewSection = (title) => {
@@ -160,20 +314,14 @@ const CoursePage = ({ courseData }) => {
         })
         setStudentGrades(gradesMap)
       } else {
-        // Fall back to API fetch if no embedded data
-        const res = await fetch(`/api/students/${encodeURIComponent(student.id || student.studentId)}/courses/${encodeURIComponent(course.course.id)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setStudentCourseData(data)
-          // Initialize grades from fetched data
-          if (data.grades && data.grades.items) {
-            const gradesMap = {}
-            data.grades.items.forEach((item) => {
-              gradesMap[item.id] = { score: item.score || '', status: item.status || '' }
-            })
-            setStudentGrades(gradesMap)
-          }
+        // Fall back to using course data if no embedded student data
+        const data = {
+          ...student,
+          sections: course.sections,
+          grades: { items: [] },
+          course: course.course
         }
+        setStudentCourseData(data)
       }
     } catch (err) {
       console.error('Failed to fetch student course data:', err)
@@ -191,18 +339,23 @@ const CoursePage = ({ courseData }) => {
 
   // Save student grades
   const saveStudentGrades = async () => {
-    if (!selectedStudent || !studentCourseData) return
+    if (!selectedStudent || !course?.course?.id) return
     try {
+      const token = localStorage.getItem('access_token')
       const payload = {
-        grades: Object.entries(studentGrades).map(([itemId, data]) => ({
-          itemId,
-          score: data.score,
-          status: data.status
-        }))
+        marks: studentGrades[selectedStudent.id]?.score || 0,
+        grade: studentGrades[selectedStudent.id]?.status || 'F',
+        pass_fail: 'Pending'
       }
-      const res = await fetch(`/api/students/${encodeURIComponent(selectedStudent.id || selectedStudent.studentId)}/courses/${encodeURIComponent(course.course.id)}/grades`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const courseId = course.course.id
+      const studentId = selectedStudent.student_id || selectedStudent.id
+      
+      const res = await fetch(`http://localhost:8000/instructor/courses/${courseId}/stud_list/${studentId}/edit_grade`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       })
       if (res.ok) {

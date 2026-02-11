@@ -61,16 +61,10 @@ const CoursePage = ({ courseData }) => {
                       <div
                         key={`item-${item.item_id}`}
                         className="content-item"
-                        onClick={() =>
-                          navigate(
-                            `/student/content/${item.item_type}/${item.item_id}`,
-                            { state: { courseId, folderId: folder.folder_id } }
-                          )
-                        }
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'default' }}
                       >
                         <span className="item-icon">{getItemIcon(item.item_type)}</span>
-                        <span className="item-title">{item.item_type}</span>
+                        <span className="item-title">{item.item_type} #{item.item_id}</span>
                       </div>
                     ))}
                   </>
@@ -86,6 +80,55 @@ const CoursePage = ({ courseData }) => {
             )}
           </div>
         ))}
+      </>
+    )
+  }
+
+  // Render sections (General, Materials, Assignments, Assessments)
+  const SectionView = ({ sections = {} }) => {
+    const sectionOrder = ['general', 'materials', 'assignments', 'assessments']
+    
+    return (
+      <>
+        {sectionOrder.map((sectionKey) => {
+          const sectionItems = sections[sectionKey] || []
+          const sectionTitle = sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)
+          
+          return (
+            <div key={sectionKey} className="content-section">
+              <button
+                className="section-header"
+                onClick={() => toggleFolder(sectionKey)}
+              >
+                <span className={`section-arrow ${expandedFolders[sectionKey] ? 'open' : ''}`}>
+                  ▼
+                </span>
+                <span className="section-title">{sectionTitle}</span>
+              </button>
+
+              {expandedFolders[sectionKey] && (
+                <div className="section-content">
+                  {sectionItems.length > 0 ? (
+                    sectionItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="content-item"
+                        style={{ cursor: 'default' }}
+                      >
+                        <span className="item-icon">{item.icon}</span>
+                        <span className="item-title">{item.title}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '0.5rem', color: '#999', fontSize: '0.9rem' }}>
+                      No items in {sectionTitle}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </>
     )
   }
@@ -128,7 +171,9 @@ const CoursePage = ({ courseData }) => {
         <div className="course-tabs-content">
           {activeTab === 'content' && (
             <div className="tab-panel">
-              {courseData.folders && courseData.folders.length > 0 ? (
+              {courseData.sections && Object.keys(courseData.sections).length > 0 ? (
+                <SectionView sections={courseData.sections} />
+              ) : courseData.folders && courseData.folders.length > 0 ? (
                 <FolderTree folders={courseData.folders} courseId={courseId} />
               ) : (
                 <div className="empty-state">

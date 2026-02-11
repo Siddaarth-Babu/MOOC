@@ -22,10 +22,55 @@ const CourseDetails = () => {
         if (!response.ok) throw new Error('Failed to fetch course structure')
         const folders = await response.json()
         
-        // Combine initial course data with folder structure
+        // Transform folders into sections object based on folder titles
+        // Map folder.title to section key (lowercase)
+        const sections = {
+          general: [],
+          materials: [],
+          assignments: [],
+          assessments: []
+        }
+
+        // Helper function to get icon based on item type
+        const getItemIcon = (itemType) => {
+          switch (itemType?.toLowerCase()) {
+            case 'video':
+              return '🎥'
+            case 'notes':
+              return '📄'
+            case 'assignment':
+              return '📝'
+            case 'textbook':
+              return '📚'
+            default:
+              return '📌'
+          }
+        }
+
+        // Process each folder and populate sections
+        folders.forEach((folder) => {
+          const folderTitle = folder.title?.toLowerCase()
+          
+          // Map folder title to section key
+          if (sections.hasOwnProperty(folderTitle)) {
+            // Transform FolderItemSchema objects to section items
+            sections[folderTitle] = (folder.items || []).map((item) => ({
+              id: item.item_id,
+              title: `${item.item_type} #${item.item_id}`, // Display as "video #1", "notes #2", etc.
+              icon: getItemIcon(item.item_type),
+              item_type: item.item_type,
+              video_id: item.video_id,
+              notes_id: item.notes_id,
+              assignment_id: item.assignment_id
+            }))
+          }
+        })
+        
+        // Combine initial course data with transformed folder structure
         setCourseData({
           course: initialCourseData?.course || { id: courseId, name: 'Loading...' },
           folders: folders,
+          sections: sections, // NEW: Populated from backend folders
           details: initialCourseData?.details || [],
           grades: initialCourseData?.grades || { items: [], overall: null }
         })

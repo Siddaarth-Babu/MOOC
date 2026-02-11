@@ -6,7 +6,7 @@ const CourseCard = ({ courseId, name, duration, skillLevel, fee, courseData }) =
 
   const goToDetails = () => {
     if (!courseId) return
-    navigate(`/instructor/teaching/${encodeURIComponent(courseId)}`, {
+    navigate(`/instructor/courses/${encodeURIComponent(courseId)}`, {
       state: { courseData }
     })
   }

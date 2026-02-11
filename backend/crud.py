@@ -111,6 +111,32 @@ def add_item_to_folder(db: Session, folder_id: int, item_type: str, reference_id
     db.refresh(new_item)
     return new_item
 
+def ensure_standard_folders(db: Session, course_id: int):
+    """
+    Ensures standard folders (General, Materials, Assignments, Assessments) exist for a course.
+    Returns list of all top-level folders for the course.
+    """
+    STANDARD_FOLDERS = ['General', 'Materials', 'Assignments', 'Assessments']
+    
+    for folder_name in STANDARD_FOLDERS:
+        # Check if folder already exists
+        existing = db.query(models.Folder).filter(
+            models.Folder.course_id == course_id,
+            models.Folder.title == folder_name,
+            models.Folder.parent_id == None
+        ).first()
+        
+        if not existing:
+            create_folder(db, title=folder_name, course_id=course_id, parent_id=None)
+    
+    # Return all top-level folders
+    folders = db.query(models.Folder).filter(
+        models.Folder.course_id == course_id,
+        models.Folder.parent_id == None
+    ).all()
+    
+    return folders
+
 """ Instructor Crud operations """
 
 def create_instructor(db:Session,instructor:schemas.InstructorCreate):

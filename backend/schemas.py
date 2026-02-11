@@ -11,6 +11,7 @@ from typing import List, Optional
 """ Schema for Course """
 class CourseBase(BaseModel):
     course_name: str
+    # course_description: Optional[str] = None
     duration: int
     skill_level: str
     course_fees: int

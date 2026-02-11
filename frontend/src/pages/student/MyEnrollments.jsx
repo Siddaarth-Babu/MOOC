@@ -85,17 +85,53 @@ const MyEnrollments = () => {
         {/* Courses Grid */}
         <div className="enrollments-grid">
           {filteredCourses.length > 0 ? (
-            filteredCourses.map((course_fetched) => (
-              <CourseCard
-                key={course_fetched.course_id}
-                courseId={course_fetched.course_id}
-                name={course_fetched.course_name}
-                duration={course_fetched.duration}
-                skillLevel={course_fetched.skill_level}
-                fee={course_fetched.course_fees}
-                courseData={course_fetched.courseDetails}
-              />
-            ))
+            filteredCourses.map((course_fetched) => {
+              // Build comprehensive courseDetails structure from backend data
+              // NO HARDCODED SECTIONS - will be fetched from backend folders
+              const courseDetails = {
+                course: {
+                  id: course_fetched.course_id,
+                  name: course_fetched.course_name,
+                  instructor: course_fetched.instructor_name || 'TBA',
+                  duration: `${course_fetched.duration} weeks`,
+                  skillLevel: course_fetched.skill_level,
+                  fee: `$${course_fetched.course_fees}`,
+                  description: course_fetched.course_description || 'No description available'
+                },
+                // Sections will be populated from backend folder structure
+                // FolderSchema contains items (FolderItemSchema) with actual data
+                sections: {
+                  general: [],
+                  materials: [],
+                  assignments: [],
+                  assessments: []
+                },
+                details: [
+                  { label: 'Course ID', value: course_fetched.course_id },
+                  { label: 'Instructor', value: course_fetched.instructor_name || 'TBA' },
+                  { label: 'Duration', value: `${course_fetched.duration} weeks` },
+                  { label: 'Skill Level', value: course_fetched.skill_level },
+                  { label: 'Course Fee', value: `$${course_fetched.course_fees}` },
+                  { label: 'Description', value: course_fetched.course_description || 'No description available', fullWidth: true }
+                ],
+                grades: {
+                  items: [],
+                  overall: null
+                }
+              }
+
+              return (
+                <CourseCard
+                  key={course_fetched.course_id}
+                  courseId={course_fetched.course_id}
+                  name={course_fetched.course_name}
+                  duration={`${course_fetched.duration} weeks`}
+                  skillLevel={course_fetched.skill_level}
+                  fee={`$${course_fetched.course_fees}`}
+                  courseData={courseDetails}
+                />
+              )
+            })
           ) : (
             <div className="no-courses-message">
               <p>No courses found. Try adjusting your filters or search.</p>
