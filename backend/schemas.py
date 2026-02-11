@@ -287,3 +287,92 @@ class CourseCreateWithInstructors(BaseModel):
     program_type: str
     institute_name: str
     instructor_emails: List[EmailStr]
+
+
+""" Admin Course Control Schemas """
+class CourseControlPerson(BaseModel):
+    name: str
+    id: int
+    email: EmailStr
+
+class CourseControlResponse(BaseModel):
+    course_name: str
+    course_id: int
+    instructors: List[CourseControlPerson] = []
+    students: List[CourseControlPerson] = []
+
+# -------------- APPENDED STATISTICS & ANALYTICS SCHEMAS --------------
+# Add this to the end of backend/schemas.py
+
+class StatsOverview(BaseModel):
+    courses: int
+    students: int
+    instructors: int
+    universities: int
+
+class CourseBrief(BaseModel):
+    course_id: int
+    course_name: str
+    instructor_name: Optional[str] = None
+    institute_name: Optional[str] = None
+    registrations: int
+
+class InstructorBrief(BaseModel):
+    instructor_id: int
+    name: str
+    avg_registrations: Optional[float] = 0.0
+
+class UniversityBrief(BaseModel):
+    institute_id: int
+    name: str
+    courses_count: int
+
+class CourseDetail(BaseModel):
+    course_id: int
+    course_name: str
+    instructor_name: Optional[str]
+    institute_name: Optional[str]
+    registrations: int
+
+class InstructorCoursesList(BaseModel):
+    instructor_id: int
+    name: str
+    courses: List[CourseBrief] = []
+
+class UniversityCoursesList(BaseModel):
+    institute_id: int
+    name: str
+    courses: List[CourseBrief] = []
+
+# Analytics schemas
+class GrossRevenueResponse(BaseModel):
+    gross_revenue: int
+
+class AvgCourseRevenueResponse(BaseModel):
+    avg_revenue: float
+
+class CourseRevenueDetail(BaseModel):
+    course_id: int
+    course_name: str
+    registrations: int
+    revenue: int
+
+class InstructorRevenueBreakdown(BaseModel):
+    instructor_id: int
+    name: str
+    total_revenue: int
+    courses: List[CourseRevenueDetail] = []
+
+class InstructorRevenueList(BaseModel):
+    instructors: List[InstructorRevenueBreakdown] = []
+
+class CourseRevenueList(BaseModel):
+    courses: List[CourseRevenueDetail] = []
+
+class CountryRegistration(BaseModel):
+    country: str
+    students: int
+
+class CountryRegistrationList(BaseModel):
+    countries: List[CountryRegistration] = []
+

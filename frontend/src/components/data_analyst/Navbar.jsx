@@ -26,6 +26,7 @@ const Navbar = () => {
           <Link to="/analyst" className="analyst-logo">MOOC Analytics</Link>
           <Link to="/analyst" className="analyst-link">Home</Link>
           <Link to="/analyst/analytics" className="analyst-link">Analytics</Link>
+          <Link to="/analyst/statistics" className="analyst-link">Statistics</Link>
         </div>
 
         <div className="analyst-nav-right">
