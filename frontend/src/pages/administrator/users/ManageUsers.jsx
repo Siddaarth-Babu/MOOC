@@ -45,14 +45,16 @@ const UsersTable = ({ users = [], onDelete = () => {}, loading = false }) => {
                 <td>{u.email}</td>
                 <td className="role-cell">{(u.role || '').replace('_', ' ')}</td>
                 <td>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => onDelete(u)}
-                    disabled={loading}
-                    title="Delete user"
-                  >
-                    Delete
-                  </button>
+                  {u.role !== 'admin' && (
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => onDelete(u)}
+                      disabled={loading}
+                      title="Delete user"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -94,10 +96,13 @@ const ManageUsers = () => {
         return
       }
       const json = await res.json()
+      console.log('Debug: Backend response:', json)
       const arr = Array.isArray(json) ? json : (json.users ?? [])
+      console.log('Debug: Users array:', arr)
 
       // Normalize each user: expose numericUserId + role-specific ids
       const normalized = arr.map(u => {
+        console.log('Debug: Normalizing user:', u)
         const numericUserId = u.user_id ?? u.id ?? u.userId ?? null
         const studentId = u.student_id ?? u.studentId ?? (u.student ? (u.student.student_id ?? null) : null) ?? null
         const instructorId = u.instructor_id ?? u.instructorId ?? (u.instructor ? (u.instructor.instructor_id ?? null) : null) ?? null
@@ -123,7 +128,7 @@ const ManageUsers = () => {
         // display id - prefer role-specific id if present
         const displayId = studentId ?? instructorId ?? analystId ?? numericUserId ?? ''
 
-        return {
+        const normalized_user = {
           id: String(displayId || ''),
           numericUserId: numericUserId ? Number(numericUserId) : null,
           studentId: studentId ? Number(studentId) : null,
@@ -134,6 +139,8 @@ const ManageUsers = () => {
           role,
           raw: u
         }
+        console.log('Debug: Normalized user:', normalized_user)
+        return normalized_user
       })
 
       setUsers(normalized)
@@ -146,8 +153,14 @@ const ManageUsers = () => {
     }
   }
 
-  // Delete handler: attempts role-specific deletes AND unified delete.
+  // Delete handler: attempts role-specific deletes ONLY (not unified delete)
   const handleDelete = async (userRow) => {
+    console.log('Debug: User object being deleted:', userRow)
+    console.log('Debug: Role:', userRow.role)
+    console.log('Debug: Student ID:', userRow.studentId)
+    console.log('Debug: Instructor ID:', userRow.instructorId)
+    console.log('Debug: Analyst ID:', userRow.analystId)
+    
     if (!window.confirm('Remove user from the system?')) return
     setError('')
 
@@ -168,31 +181,27 @@ const ManageUsers = () => {
       }
     }
 
-    // Build endpoints to try (role-specific first, compatibility variants)
+    // Build ONLY role-specific endpoints (prioritize these over unified delete)
     const endpoints = []
     if (userRow.role === 'student' && userRow.studentId) {
       endpoints.push(`/admin/del_student/${userRow.studentId}`)
       endpoints.push(`/admin/student/${userRow.studentId}`)
-    }
-    if (userRow.role === 'instructor' && userRow.instructorId) {
+    } else if (userRow.role === 'instructor' && userRow.instructorId) {
       endpoints.push(`/admin/del_instructor/${userRow.instructorId}`)
       endpoints.push(`/admin/instructor/${userRow.instructorId}`)
-    }
-    if ((userRow.role === 'data_analyst' || userRow.role === 'analyst') && userRow.analystId) {
+    } else if ((userRow.role === 'data_analyst' || userRow.role === 'analyst') && userRow.analystId) {
       endpoints.push(`/admin/del_data_analyst/${userRow.analystId}`)
       endpoints.push(`/admin/data_analyst/${userRow.analystId}`)
     }
 
-    // Add unified user delete (try it as well)
-    if (userRow.numericUserId) {
-      endpoints.push(`/admin/user/${userRow.numericUserId}`)
-    }
+    console.log('Debug: Endpoints to try:', endpoints)
 
     // Remove duplicates while preserving order
     const uniqueEndpoints = Array.from(new Set(endpoints))
 
     if (uniqueEndpoints.length === 0) {
-      alert('Unable to determine any delete endpoints for this user. Ensure the user object contains role-specific IDs or a central user_id.')
+      console.error('Debug: No endpoints found. User data:', userRow)
+      alert('Unable to determine delete endpoint for this user. Make sure they have a valid role with matching ID.')
       return
     }
 
@@ -212,7 +221,7 @@ const ManageUsers = () => {
         if (res.ok) {
           anySuccess = true
           messages.push({ endpoint: ep, msg: msg || `Deleted via ${ep}` })
-          // Keep trying remaining endpoints — it's okay if unified or role-specific both run
+          break // Stop after first success
         } else {
           failures.push({ endpoint: ep, status: res.status, msg })
           console.warn(`Delete endpoint ${ep} returned ${res.status}:`, msg)
@@ -234,15 +243,15 @@ const ManageUsers = () => {
         return !(u.id === userRow.id && u.role === userRow.role)
       }))
 
-      // Show success messages (concise)
+      // Show success messages
       const successText = messages.map(m => m.msg).filter(Boolean).join(' — ')
       if (successText) alert(successText)
-      else alert('User removed (one or more endpoints succeeded).')
+      else alert(`${userRow.name} has been removed from ${userRow.role} records and user system.`)
     } else {
       // No endpoint succeeded
       const failText = failures.map(f => `${f.endpoint} -> ${f.msg || f.status}`).join('\n')
       alert('Delete failed. Server responses:\n' + (failText || 'unknown error'))
-      // To ensure UI consistency, refetch
+      // Refetch to ensure UI consistency
       await fetchUsers()
     }
   }

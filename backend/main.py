@@ -799,11 +799,72 @@ def admin_users(
     admin: models.SystemAdmin = Depends(get_curr_admin), # Returns systemadmin model
     db: Session = Depends(get_db)
     ):
-    all_users = db.query(models.User).all()
-    
-    return {
-        "users": all_users,
-    }
+    try:
+        users_list = []
+        
+        # Fetch all students
+        students = db.query(models.Student).all()
+        for student in students:
+            users_list.append({
+                "id": student.student_id,
+                "user_id": None,  # Student records don't have explicit user_id link
+                "student_id": student.student_id,
+                "instructor_id": None,
+                "analyst_id": None,
+                "full_name": student.name,
+                "email": student.email_id,
+                "role": "student"
+            })
+        
+        # Fetch all instructors
+        instructors = db.query(models.Instructor).all()
+        for instructor in instructors:
+            users_list.append({
+                "id": instructor.instructor_id,
+                "user_id": None,
+                "student_id": None,
+                "instructor_id": instructor.instructor_id,
+                "analyst_id": None,
+                "full_name": instructor.name,
+                "email": instructor.email_id,
+                "role": "instructor"
+            })
+        
+        # Fetch all data analysts
+        analysts = db.query(models.DataAnalyst).all()
+        for analyst in analysts:
+            users_list.append({
+                "id": analyst.analyst_id,
+                "user_id": None,
+                "student_id": None,
+                "instructor_id": None,
+                "analyst_id": analyst.analyst_id,
+                "full_name": analyst.name,
+                "email": analyst.email_id,
+                "role": "analyst"
+            })
+        
+        # Fetch admins from User table with role='admin'
+        admins = db.query(models.User).filter(models.User.role == "admin").all()
+        for admin_user in admins:
+            users_list.append({
+                "id": admin_user.id,
+                "user_id": admin_user.id,
+                "student_id": None,
+                "instructor_id": None,
+                "analyst_id": None,
+                "full_name": admin_user.full_name,
+                "email": admin_user.email,
+                "role": "admin"
+            })
+        
+        print(f"DEBUG: Returning {len(users_list)} users")
+        return {"users": users_list}
+    except Exception as e:
+        print(f"ERROR in admin_users: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching users: {str(e)}")
 
 
 @app.get("/admin/instructors")
@@ -1540,10 +1601,24 @@ def remove_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     try:
+        # Also delete from role-specific tables by matching email
+        student = db.query(models.Student).filter(models.Student.email_id == user.email).first()
+        if student:
+            db.delete(student)
+        
+        instructor = db.query(models.Instructor).filter(models.Instructor.email_id == user.email).first()
+        if instructor:
+            db.delete(instructor)
+        
+        analyst = db.query(models.DataAnalyst).filter(models.DataAnalyst.email_id == user.email).first()
+        if analyst:
+            db.delete(analyst)
+        
+        # Finally delete the user
         db.delete(user)
         db.commit()
         return {
-            "message": f"User '{user.full_name}' removed successfully"
+            "message": f"User '{user.full_name}' removed successfully from all tables"
         }
     except Exception as e:
         db.rollback()
@@ -1687,14 +1762,3 @@ def remove_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to remove course")
-    
-@app.get("/admin/users")
-def admin_users(
-    admin: models.SystemAdmin = Depends(get_curr_admin), # Returns systemadmin model
-    db: Session = Depends(get_db)
-    ):
-    all_users = db.query(models.User).all()
-    
-    return {
-        "users": all_users,
-    }
