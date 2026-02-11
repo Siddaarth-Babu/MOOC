@@ -1,296 +1,335 @@
 import React, { useState } from 'react'
 
 const Statistics = ({
-  // Primary stats
-  courses = 0,
-  students = 0,
-  instructors = 0,
-  universities = 0,
-  // Rating
-  courseRatings = 0,
-  // Course with highest rating
-  highestRatedCourse = 'N/A',
-  highestRatedCourseId = 0,
-  // Course with highest registrations
-  highestViewedCourse = 'N/A',
-  highestViewedCourseId = 0,
-  // Top instructors
-  topInstructorRating = 'N/A',
-  topInstructorRatingId = 0,
-  topInstructorRegistrations = 'N/A',
-  topInstructorRegistrationsId = 0,
-  // Top university
-  topUniversity = 'N/A',
-  topUniversityId = 0,
-  // Detail data fetchers (optional, for loading details)
-  onCompany = null
+  totalRevenue = 0,
+  totalEnrollments = 0,
+  avgRevenuePerCourse = 0,
+  revenueData = [],
+  gradeData = [],
+  countryData = []
 }) => {
-  const [activeModal, setActiveModal] = useState(null)
-  const [modalData, setModalData] = useState(null)
-  const [modalLoading, setModalLoading] = useState(false)
+  const [activeChart, setActiveChart] = useState('revenue')
 
-  const handleCardClick = (cardType, id) => {
-    setActiveModal(cardType)
-    setModalLoading(true)
-    
-    // Simulate fetching detail data; replace with real API calls later
-    setTimeout(() => {
-      switch(cardType) {
-        case 'highest-rated-course':
-          setModalData({
-            courseId: 'CS-301',
-            courseName: 'Advanced React Development',
-            instructor: 'Dr. Sarah Johnson',
-            university: 'Stanford University',
-            studentsRegistered: 342,
-            rating: 4.8,
-            description: 'Master advanced React patterns and best practices'
-          })
-          break
-        case 'highest-views-course':
-          setModalData({
-            courseId: 'CS-101',
-            courseName: 'Web Development 101',
-            instructor: 'Prof. John Smith',
-            university: 'MIT',
-            studentsRegistered: 567,
-            rating: 4.5,
-            description: 'Complete guide to web development fundamentals'
-          })
-          break
-        case 'top-instructor-rating':
-          setModalData({
-            instructorId: 'INST-005',
-            instructorName: 'Dr. Sarah Johnson',
-            courses: [
-              { courseId: 'CS-301', courseName: 'Advanced React', students: 342, rating: 4.8 },
-              { courseId: 'CS-302', courseName: 'Node.js Mastery', students: 289, rating: 4.7 },
-              { courseId: 'CS-303', courseName: 'JavaScript Advanced', students: 215, rating: 4.6 }
-            ]
-          })
-          break
-        case 'top-instructor-registrations':
-          setModalData({
-            instructorId: 'INST-001',
-            instructorName: 'Prof. John Smith',
-            courses: [
-              { courseId: 'CS-101', courseName: 'Web Development 101', students: 567, rating: 4.5 },
-              { courseId: 'CS-102', courseName: 'HTML & CSS Basics', students: 498, rating: 4.3 },
-              { courseId: 'CS-103', courseName: 'JavaScript Fundamentals', students: 456, rating: 4.4 }
-            ]
-          })
-          break
-        case 'top-university':
-          setModalData({
-            universityId: 'UNI-001',
-            universityName: 'Stanford University',
-            totalCourses: 18,
-            courses: [
-              { courseId: 'CS-301', courseName: 'Advanced React Development', students: 342, rating: 4.8 },
-              { courseId: 'CS-305', courseName: 'Machine Learning Basics', students: 298, rating: 4.7 },
-              { courseId: 'CS-310', courseName: 'Cloud Computing', students: 276, rating: 4.6 },
-              { courseId: 'CS-315', courseName: 'Data Science 101', students: 245, rating: 4.5 }
-            ]
-          })
-          break
-        default:
-          setModalData(null)
-      }
-      setModalLoading(false)
-    }, 300)
-  }
+  // Get top revenue course
+  const topRevenueCourse = revenueData.length > 0 
+    ? revenueData.reduce((prev, current) => 
+        (prev.value || 0) > (current.value || 0) ? prev : current
+      )
+    : null
 
-  const closeModal = () => {
-    setActiveModal(null)
-    setModalData(null)
-  }
+  // Get top enrollment country
+  const topCountry = countryData.length > 0
+    ? countryData.reduce((prev, current) =>
+        (prev.count || 0) > (current.count || 0) ? prev : current
+      )
+    : null
+
+  // Get most common grade
+  const topGrade = gradeData.length > 0
+    ? gradeData.reduce((prev, current) =>
+        (prev.count || 0) > (current.count || 0) ? prev : current
+      )
+    : null
 
   return (
-    <>
-      {/* Primary Stats Row */}
-      <div className="analyst-primary-row">
-        <div className="analyst-primary-card">
-          <div className="analyst-primary-value">{courses}</div>
-          <div className="analyst-primary-label">Courses</div>
-        </div>
-        <div className="analyst-primary-card">
-          <div className="analyst-primary-value">{students}</div>
-          <div className="analyst-primary-label">Students</div>
-        </div>
-        <div className="analyst-primary-card">
-          <div className="analyst-primary-value">{instructors}</div>
-          <div className="analyst-primary-label">Instructors</div>
-        </div>
-        <div className="analyst-primary-card">
-          <div className="analyst-primary-value">{universities}</div>
-          <div className="analyst-primary-label">Universities</div>
-        </div>
-      </div>
-
-      {/* Average Rating */}
-      <div className="analyst-rating-card">
-        <div className="analyst-rating-value">⭐ {courseRatings}</div>
-        <div className="analyst-primary-label">Average Course Rating</div>
-      </div>
-
-      {/* Highest Rated Course */}
-      <div 
-        className="analyst-clickable-card" 
-        onClick={() => handleCardClick('highest-rated-course', highestRatedCourseId)}
-      >
-        <div className="analyst-card-title">Highest Rated Course</div>
-        <div className="analyst-card-value">{highestRatedCourse}</div>
-        <div className="analyst-card-meta">ID: {highestRatedCourseId} • Click for details</div>
-      </div>
-
-      {/* Highest Views Course */}
-      <div 
-        className="analyst-clickable-card"
-        onClick={() => handleCardClick('highest-views-course', highestViewedCourseId)}
-      >
-        <div className="analyst-card-title">Highest Registrations</div>
-        <div className="analyst-card-value">{highestViewedCourse}</div>
-        <div className="analyst-card-meta">ID: {highestViewedCourseId} • Click for details</div>
-      </div>
-
-      {/* Top Instructor by Rating */}
-      <div 
-        className="analyst-clickable-card"
-        onClick={() => handleCardClick('top-instructor-rating', topInstructorRatingId)}
-      >
-        <div className="analyst-card-title">Top Instructor (by Rating)</div>
-        <div className="analyst-card-value">{topInstructorRating}</div>
-        <div className="analyst-card-meta">ID: {topInstructorRatingId} • Click for courses</div>
-      </div>
-
-      {/* Top Instructor by Registrations */}
-      <div 
-        className="analyst-clickable-card"
-        onClick={() => handleCardClick('top-instructor-registrations', topInstructorRegistrationsId)}
-      >
-        <div className="analyst-card-title">Top Instructor (by Registrations)</div>
-        <div className="analyst-card-value">{topInstructorRegistrations}</div>
-        <div className="analyst-card-meta">ID: {topInstructorRegistrationsId} • Click for courses</div>
-      </div>
-
-      {/* Top University */}
-      <div 
-        className="analyst-clickable-card"
-        onClick={() => handleCardClick('top-university', topUniversityId)}
-      >
-        <div className="analyst-card-title">Top University (by Courses)</div>
-        <div className="analyst-card-value">{topUniversity}</div>
-        <div className="analyst-card-meta">ID: {topUniversityId} • Click for courses</div>
-      </div>
-
-      {/* Modal */}
-      {activeModal && (
-        <div className="analyst-modal-overlay" onClick={closeModal}>
-          <div className="analyst-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="analyst-modal-header">
-              <h2 className="analyst-modal-title">
-                {activeModal === 'highest-rated-course' && 'Course Details'}
-                {activeModal === 'highest-views-course' && 'Course Details'}
-                {activeModal === 'top-instructor-rating' && 'Instructor Details'}
-                {activeModal === 'top-instructor-registrations' && 'Instructor Details'}
-                {activeModal === 'top-university' && 'University Details'}
-              </h2>
-              <button className="analyst-modal-close" onClick={closeModal}>✕</button>
-            </div>
-
-            {modalLoading ? (
-              <p style={{ textAlign: 'center', color: '#6b7280' }}>Loading details…</p>
-            ) : modalData ? (
-              <>
-                {/* Course Details */}
-                {(activeModal === 'highest-rated-course' || activeModal === 'highest-views-course') && (
-                  <div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Course ID</span>
-                      <span className="analyst-detail-value">{modalData.courseId}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Course Name</span>
-                      <span className="analyst-detail-value">{modalData.courseName}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Instructor</span>
-                      <span className="analyst-detail-value">{modalData.instructor}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">University</span>
-                      <span className="analyst-detail-value">{modalData.university}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Students Registered</span>
-                      <span className="analyst-detail-value">{modalData.studentsRegistered}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Rating</span>
-                      <span className="analyst-detail-value">⭐ {modalData.rating}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Instructor Details */}
-                {(activeModal === 'top-instructor-rating' || activeModal === 'top-instructor-registrations') && (
-                  <div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Instructor ID</span>
-                      <span className="analyst-detail-value">{modalData.instructorId}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Instructor Name</span>
-                      <span className="analyst-detail-value">{modalData.instructorName}</span>
-                    </div>
-                    <div className="analyst-detail-section">
-                      <div className="analyst-detail-section-title">Courses Teaching</div>
-                      {modalData.courses.map((course, idx) => (
-                        <div key={idx} className="analyst-course-item">
-                          <div className="analyst-course-item-name">{course.courseName}</div>
-                          <div className="analyst-course-item-meta">ID: {course.courseId}</div>
-                          <div className="analyst-course-item-meta">Students: {course.students} • Rating: ⭐ {course.rating}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* University Details */}
-                {activeModal === 'top-university' && (
-                  <div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">University ID</span>
-                      <span className="analyst-detail-value">{modalData.universityId}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">University Name</span>
-                      <span className="analyst-detail-value">{modalData.universityName}</span>
-                    </div>
-                    <div className="analyst-detail-row">
-                      <span className="analyst-detail-label">Total Courses</span>
-                      <span className="analyst-detail-value">{modalData.totalCourses}</span>
-                    </div>
-                    <div className="analyst-detail-section">
-                      <div className="analyst-detail-section-title">Courses Offered</div>
-                      {modalData.courses.map((course, idx) => (
-                        <div key={idx} className="analyst-course-item">
-                          <div className="analyst-course-item-name">{course.courseName}</div>
-                          <div className="analyst-course-item-meta">ID: {course.courseId}</div>
-                          <div className="analyst-course-item-meta">Students: {course.students} • Rating: ⭐ {course.rating}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#e53e3e' }}>Error loading details</p>
-            )}
+    <div className="analyst-dashboard">
+      {/* Key Metrics Row */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px'
+      }}>
+        {/* Total Revenue */}
+        <div style={{
+          backgroundColor: '#fff',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Total Revenue</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#10b981' }}>
+            ${totalRevenue.toLocaleString()}
           </div>
         </div>
-      )}
-    </>
+
+        {/* Total Enrollments */}
+        <div style={{
+          backgroundColor: '#fff',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Total Enrollments</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#3b82f6' }}>
+            {totalEnrollments.toLocaleString()}
+          </div>
+        </div>
+
+        {/* Average Revenue Per Course */}
+        <div style={{
+          backgroundColor: '#fff',
+          padding: '20px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>Avg Revenue/Course</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#8b5cf6' }}>
+            ${avgRevenuePerCourse.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Top Insights Row */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px'
+      }}>
+        {/* Top Revenue Course */}
+        {topRevenueCourse && (
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase' }}>
+              Top Revenue Course
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+              {topRevenueCourse.name}
+            </div>
+            <div style={{ fontSize: '16px', color: '#10b981', fontWeight: 'bold' }}>
+              ${topRevenueCourse.value?.toLocaleString()}
+            </div>
+          </div>
+        )}
+
+        {/* Top Enrollment Country */}
+        {topCountry && (
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase' }}>
+              Top Enrollment Country
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+              {topCountry.country || 'N/A'}
+            </div>
+            <div style={{ fontSize: '16px', color: '#3b82f6', fontWeight: 'bold' }}>
+              {topCountry.count?.toLocaleString()} students
+            </div>
+          </div>
+        )}
+
+        {/* Most Common Grade */}
+        {topGrade && (
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase' }}>
+              Most Common Grade
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+              {topGrade.grade || 'N/A'}
+            </div>
+            <div style={{ fontSize: '16px', color: '#f59e0b', fontWeight: 'bold' }}>
+              {topGrade.count?.toLocaleString()} students
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Charts Section */}
+      <div style={{ marginBottom: '30px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button
+              onClick={() => setActiveChart('revenue')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activeChart === 'revenue' ? '#3b82f6' : '#e5e7eb',
+                color: activeChart === 'revenue' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Revenue by Course
+            </button>
+            <button
+              onClick={() => setActiveChart('grades')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activeChart === 'grades' ? '#3b82f6' : '#e5e7eb',
+                color: activeChart === 'grades' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Grade Distribution
+            </button>
+            <button
+              onClick={() => setActiveChart('countries')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activeChart === 'countries' ? '#3b82f6' : '#e5e7eb',
+                color: activeChart === 'countries' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Enrollments by Country
+            </button>
+          </div>
+
+          {/* Revenue Chart */}
+          {activeChart === 'revenue' && revenueData.length > 0 && (
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1f2937' }}>Revenue by Course</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {revenueData.map((item, idx) => {
+                  const maxValue = Math.max(...revenueData.map(d => d.value || 0))
+                  const percentage = (item.value / maxValue) * 100
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '14px', color: '#374151' }}>{item.name}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#10b981' }}>
+                          ${item.value?.toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '24px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          backgroundColor: '#10b981',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Grade Distribution Chart */}
+          {activeChart === 'grades' && gradeData.length > 0 && (
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1f2937' }}>Grade Distribution</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {gradeData.map((item, idx) => {
+                  const maxCount = Math.max(...gradeData.map(d => d.count || 0))
+                  const percentage = (item.count / maxCount) * 100
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '14px', color: '#374151' }}>Grade {item.grade}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b' }}>
+                          {item.count?.toLocaleString()} students
+                        </span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '24px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          backgroundColor: '#f59e0b',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Country Distribution Chart */}
+          {activeChart === 'countries' && countryData.length > 0 && (
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1f2937' }}>Enrollments by Country</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {countryData.map((item, idx) => {
+                  const maxCount = Math.max(...countryData.map(d => d.count || 0))
+                  const percentage = (item.count / maxCount) * 100
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '14px', color: '#374151' }}>{item.country}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>
+                          {item.count?.toLocaleString()} students
+                        </span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '24px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          backgroundColor: '#3b82f6',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

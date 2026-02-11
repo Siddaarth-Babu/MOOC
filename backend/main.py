@@ -1694,3 +1694,62 @@ def admin_users(
     return {
         "users": all_users,
     }
+
+
+    """ Data Analyst Routing """
+
+@app.get("/analyst/home/")
+def get_advanced_stats(
+    db: Session = Depends(get_db),
+    analyst: models.DataAnalyst = Depends(get_curr_analyst)
+):
+    # 1. TOTAL REVENUE (Sum of fees of all courses for every enrollment)
+    # Logic: Join Course and the Link table, then sum the course_fees
+    total_revenue = db.query(
+        func.sum(models.Course.course_fees)
+    ).join(
+        models.course_student_link
+    ).scalar() or 0  # .scalar() returns the single number result
+
+    # 2. REVENUE PER COURSE (For the Pie Chart)
+    revenue_per_course = db.query(
+        models.Course.course_name,
+        func.sum(models.Course.course_fees).label("total_revenue")
+    ).join(
+        models.course_student_link
+    ).group_by(
+        models.Course.course_id
+    ).all()
+
+    # 3. GRADE DISTRIBUTION (How many students got A, B, etc.)
+    grade_dist = db.query(
+        models.Evaluation.grade,
+        func.count(models.Evaluation.evaluation_id)
+    ).group_by(
+        models.Evaluation.grade
+    ).all()
+
+    # 4. ENROLLMENTS BY COUNTRY
+    country_dist = db.query(
+        models.Student.country,
+        func.count(models.Student.student_id)
+    ).group_by(
+        models.Student.country
+    ).all()
+
+    # Format for React
+    return {
+        "analyst": {
+            "name": analyst.name,
+            "email": analyst.email_id
+        },
+        "summary": {
+            "total_revenue": total_revenue,
+            "total_enrollments": db.query(models.course_student_link).count(),
+        },
+        "charts": {
+            "revenue_data": [{"name": row[0], "value": row[1]} for row in revenue_per_course],
+            "grade_data": [{"grade": row[0], "count": row[1]} for row in grade_dist],
+            "country_data": [{"country": row[0], "count": row[1]} for row in country_dist]
+        }
+    }
