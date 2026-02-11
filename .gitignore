@@ -1,2 +1,45 @@
+# --- Python / FastAPI Backend ---
+__pycache__/
+*.py[cod]
+*$py.class
 .env
-backend/__pycache__/
+.venv
+env/
+venv/
+ENV/
+.python-version
+db_test.py
+
+# Database files (Local SQLite)
+dev.db
+*.sqlite3
+
+# --- Node / React Frontend ---
+node_modules/
+dist/
+build/
+.eslintcache
+.stylelintcache
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+
+# --- IDE & System ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Vite Specific ---
+.vite/
+dist/
+
+# --- Mocking & Testing ---
+mock-server/
+.msw/
